@@ -1,0 +1,45 @@
+{
+  "id": "no-yes",
+  "name": "Không / Có",
+  "boxes": [
+    {
+      "id": "no",
+      "x": 0.45,
+      "y": 0.05,
+      "w": 0.51,
+      "h": 0.4,
+      "style": "caption",
+      "max_lines": 4,
+      "max_chars": 60,
+      "hint": "thứ bị từ chối, chê"
+    },
+    {
+      "id": "yes",
+      "x": 0.45,
+      "y": 0.55,
+      "w": 0.51,
+      "h": 0.4,
+      "style": "caption",
+      "max_lines": 4,
+      "max_chars": 60,
+      "hint": "thứ được thích, chọn"
+    }
+  ],
+  "when_to_use": "So sánh thứ mình né tránh với thứ mình thích hơn; sở thích trái khoáy, chọn cái kém hợp lý",
+  "examples": [
+    {
+      "no": "Ôn bài từ đầu kỳ",
+      "yes": "Học xuyên đêm trước hôm thi"
+    }
+  ],
+  "tags": [
+    "so sánh",
+    "thích",
+    "không thích",
+    "sở thích",
+    "chọn"
+  ],
+  "image": "no-yes.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}

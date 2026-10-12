@@ -1,0 +1,45 @@
+{
+  "id": "expectation-reality",
+  "name": "Kỳ vọng / Thực tế",
+  "boxes": [
+    {
+      "id": "left",
+      "x": 0.02,
+      "y": 0.02,
+      "w": 0.46,
+      "h": 0.16,
+      "style": "caption",
+      "max_lines": 2,
+      "max_chars": 30,
+      "hint": "kỳ vọng"
+    },
+    {
+      "id": "right",
+      "x": 0.52,
+      "y": 0.02,
+      "w": 0.46,
+      "h": 0.16,
+      "style": "caption",
+      "max_lines": 2,
+      "max_chars": 30,
+      "hint": "thực tế"
+    }
+  ],
+  "when_to_use": "Kỳ vọng đẹp đẽ khác xa thực tế phũ phàng; kế hoạch so với kết quả, quảng cáo so với hàng thật",
+  "examples": [
+    {
+      "left": "Kế hoạch học cả tuần",
+      "right": "Tối chủ nhật thực tế"
+    }
+  ],
+  "tags": [
+    "kỳ vọng",
+    "thực tế",
+    "thất vọng",
+    "kế hoạch",
+    "trước sau"
+  ],
+  "image": "expectation-reality.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}

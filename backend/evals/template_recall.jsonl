@@ -1,0 +1,24 @@
+{"topic": "Sếp giao thêm một đống việc", "templates": ["pile"]}
+{"topic": "Thầy nói bài tập ít thôi mà làm cả đêm", "templates": ["pile"]}
+{"topic": "Chỉ cần sửa nhỏ thôi mà phải làm lại cả hệ thống", "templates": ["pile"]}
+{"topic": "Việc nhà cuối tuần chất đống", "templates": ["pile"]}
+{"topic": "Không biết nên ngủ hay chơi tiếp", "templates": ["two-buttons"]}
+{"topic": "Chọn giữa trà sữa và giữ dáng", "templates": ["two-buttons", "no-yes"]}
+{"topic": "Khó xử giữa đi chơi với bạn và ôn thi", "templates": ["two-buttons"]}
+{"topic": "Đắn đo mua hay không mua đồ sale", "templates": ["two-buttons"]}
+{"topic": "Còn 5 phút nữa là nộp bài mà vẫn bình tĩnh", "templates": ["calm-clock"]}
+{"topic": "Mai thi mà nay vẫn xem phim", "templates": ["calm-clock"]}
+{"topic": "Nhà sắp cháy vẫn uống cà phê", "templates": ["calm-clock"]}
+{"topic": "Sắp trễ chuyến bay vẫn thong thả", "templates": ["calm-clock"]}
+{"topic": "Không thích ôn bài sớm, thích học dồn", "templates": ["no-yes"]}
+{"topic": "Chê nước lọc, mê nước ngọt", "templates": ["no-yes"]}
+{"topic": "Né tập thể dục, thích nằm lướt điện thoại", "templates": ["no-yes"]}
+{"topic": "Không ăn rau, chỉ ăn thịt", "templates": ["no-yes"]}
+{"topic": "Mua online ảnh đẹp, hàng về thảm họa", "templates": ["expectation-reality"]}
+{"topic": "Kế hoạch giảm cân và kết quả sau Tết", "templates": ["expectation-reality"]}
+{"topic": "Tưởng tượng đi du lịch và thực tế kẹt xe", "templates": ["expectation-reality"]}
+{"topic": "Làm bánh theo video và thành phẩm", "templates": ["expectation-reality"]}
+{"topic": "Các cấp độ trốn việc", "templates": ["brain-levels"]}
+{"topic": "Từ đặt báo thức đến thức trắng", "templates": ["brain-levels"]}
+{"topic": "Cách học từ đọc sách đến cầu nguyện", "templates": ["brain-levels"]}
+{"topic": "Leo thang cách tiết kiệm tiền", "templates": ["brain-levels"]}

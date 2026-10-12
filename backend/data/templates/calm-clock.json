@@ -1,0 +1,45 @@
+{
+  "id": "calm-clock",
+  "name": "Vẫn ổn mà",
+  "boxes": [
+    {
+      "id": "top",
+      "x": 0.03,
+      "y": 0.02,
+      "w": 0.94,
+      "h": 0.15,
+      "style": "impact",
+      "max_lines": 2,
+      "max_chars": 36,
+      "hint": "hoàn cảnh gấp gáp, giờ giấc"
+    },
+    {
+      "id": "bottom",
+      "x": 0.03,
+      "y": 0.83,
+      "w": 0.94,
+      "h": 0.15,
+      "style": "impact",
+      "max_lines": 2,
+      "max_chars": 36,
+      "hint": "câu tự trấn an bình thản"
+    }
+  ],
+  "when_to_use": "Bình thản, tự trấn an trong khi tình hình đang rất gấp hoặc sắp toang; sát giờ, nước đến chân",
+  "examples": [
+    {
+      "top": "Thứ 6, 17:59",
+      "bottom": "Vẫn kịp, còn 1 phút mà"
+    }
+  ],
+  "tags": [
+    "bình tĩnh",
+    "sát giờ",
+    "trì hoãn",
+    "sắp toang",
+    "tự an ủi"
+  ],
+  "image": "calm-clock.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}

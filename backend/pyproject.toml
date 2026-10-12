@@ -1,0 +1,19 @@
+[project]
+name = "chememe-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]  # FastAPI Depends/File trong tham số mặc định
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/make_templates.py" = ["E501"]  # chuỗi mô tả template tiếng Việt

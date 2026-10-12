@@ -1,0 +1,36 @@
+{
+  "id": "pile",
+  "name": "Chút việc nhỏ",
+  "boxes": [
+    {
+      "id": "top",
+      "x": 0.03,
+      "y": 0.015,
+      "w": 0.94,
+      "h": 0.23,
+      "style": "caption",
+      "max_lines": 3,
+      "max_chars": 70,
+      "hint": "câu nói nhẹ nhàng, rồi xuống dòng với 'X thực tế:' để ảnh cho thấy nó khổng lồ"
+    }
+  ],
+  "when_to_use": "Một việc được nói là nhỏ, nhanh, đơn giản nhưng thực tế khổng lồ, ngập đầu; bị giao thêm việc, khối lượng quá tải",
+  "examples": [
+    {
+      "top": "Sếp: có chút việc nhỏ thôi em\nChút việc nhỏ:"
+    },
+    {
+      "top": "Thầy: bài tập về nhà nhẹ thôi\nBài tập:"
+    }
+  ],
+  "tags": [
+    "quá tải",
+    "giao việc",
+    "ngập việc",
+    "deadline",
+    "nói giảm nói tránh"
+  ],
+  "image": "pile.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}

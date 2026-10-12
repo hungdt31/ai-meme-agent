@@ -1,0 +1,69 @@
+{
+  "id": "brain-levels",
+  "name": "Bốn cấp độ não",
+  "boxes": [
+    {
+      "id": "l1",
+      "x": 0.03,
+      "y": 0.025,
+      "w": 0.56,
+      "h": 0.2,
+      "style": "caption",
+      "max_lines": 3,
+      "max_chars": 50,
+      "hint": "cách làm cấp 1, càng về sau càng 'cao siêu' một cách vô lý"
+    },
+    {
+      "id": "l2",
+      "x": 0.03,
+      "y": 0.275,
+      "w": 0.56,
+      "h": 0.2,
+      "style": "caption",
+      "max_lines": 3,
+      "max_chars": 50,
+      "hint": "cách làm cấp 2, càng về sau càng 'cao siêu' một cách vô lý"
+    },
+    {
+      "id": "l3",
+      "x": 0.03,
+      "y": 0.525,
+      "w": 0.56,
+      "h": 0.2,
+      "style": "caption",
+      "max_lines": 3,
+      "max_chars": 50,
+      "hint": "cách làm cấp 3, càng về sau càng 'cao siêu' một cách vô lý"
+    },
+    {
+      "id": "l4",
+      "x": 0.03,
+      "y": 0.775,
+      "w": 0.56,
+      "h": 0.2,
+      "style": "caption",
+      "max_lines": 3,
+      "max_chars": 50,
+      "hint": "cách làm cấp 4, càng về sau càng 'cao siêu' một cách vô lý"
+    }
+  ],
+  "when_to_use": "Liệt kê các cách làm từ bình thường đến 'cao siêu' một cách hài hước, leo thang mức độ, càng lúc càng vô lý",
+  "examples": [
+    {
+      "l1": "Đặt báo thức",
+      "l2": "Đặt 5 báo thức",
+      "l3": "Nhờ mẹ gọi dậy",
+      "l4": "Không ngủ luôn"
+    }
+  ],
+  "tags": [
+    "leo thang",
+    "cấp độ",
+    "khai sáng",
+    "so sánh nhiều",
+    "cách giải quyết"
+  ],
+  "image": "brain-levels.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}

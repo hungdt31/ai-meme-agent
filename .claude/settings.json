@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python -m pytest)",
+      "Bash(.venv/bin/python -m pytest *)",
+      "Bash(.venv/bin/ruff check *)",
+      "Bash(.venv/bin/ruff format *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run build)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(.venv/bin/python ../.claude/skills/debug-agent/scripts/run_job.py *)",
+      "Bash(.venv/bin/python ../.claude/skills/add-template/scripts/check_template.py *)",
+      "Bash(.venv/bin/python ../.claude/skills/arena-evals/scripts/db_target.py)",
+      "Bash(.claude/skills/local-dev/scripts/dev_up.sh *)",
+      "Bash(.claude/skills/local-dev/scripts/dev_down.sh *)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Bash(rm -rf storage*)",
+      "Bash(rm -rf ./storage*)",
+      "Bash(rm -rf backend/storage*)",
+      "Bash(rm -r storage*)",
+      "Bash(rm -r backend/storage*)",
+      "Bash(rm *chememe.db*)",
+      "Bash(rm -f *chememe.db*)",
+      "Edit(backend/storage/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in \"$CLAUDE_PROJECT_DIR\"/backend/*.py) \"$CLAUDE_PROJECT_DIR/backend/.venv/bin/ruff\" format --quiet --config \"$CLAUDE_PROJECT_DIR/backend/pyproject.toml\" \"$f\" ;; esac; } 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "ruff format"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "two-buttons",
+  "name": "Hai nút bấm",
+  "boxes": [
+    {
+      "id": "left",
+      "x": 0.236,
+      "y": 0.208,
+      "w": 0.194,
+      "h": 0.14,
+      "style": "label",
+      "max_lines": 3,
+      "max_chars": 24,
+      "hint": "lựa chọn 1"
+    },
+    {
+      "id": "right",
+      "x": 0.569,
+      "y": 0.208,
+      "w": 0.194,
+      "h": 0.14,
+      "style": "label",
+      "max_lines": 3,
+      "max_chars": 24,
+      "hint": "lựa chọn 2"
+    },
+    {
+      "id": "bottom",
+      "x": 0.03,
+      "y": 0.86,
+      "w": 0.94,
+      "h": 0.12,
+      "style": "impact",
+      "max_lines": 2,
+      "max_chars": 32,
+      "hint": "người đang phân vân"
+    }
+  ],
+  "when_to_use": "Phân vân, khó xử giữa hai lựa chọn đều hấp dẫn hoặc đều tệ, mâu thuẫn bản thân",
+  "examples": [
+    {
+      "left": "Ngủ sớm",
+      "right": "Lướt thêm 5 phút",
+      "bottom": "Tôi lúc 1 giờ sáng"
+    }
+  ],
+  "tags": [
+    "lựa chọn",
+    "phân vân",
+    "khó xử",
+    "mâu thuẫn",
+    "đổ mồ hôi"
+  ],
+  "image": "two-buttons.png",
+  "source": "Tự vẽ bằng scripts/make_templates.py",
+  "enabled": true
+}
