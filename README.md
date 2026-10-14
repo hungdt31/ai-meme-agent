@@ -24,7 +24,7 @@ chememe/
 │   ├── agent/      graph.py, nodes.py, state.py, prompts.py, llm.py (Gemini + FakeLLM)
 │   ├── rag/        search.py: hybrid search chọn template
 │   ├── render/     renderer.py (đặt chữ, đo tràn), templates.py, fonts/ (Anton, Be Vietnam Pro, giấy phép OFL)
-│   ├── app/        main.py, api.py, service.py, db.py, storage.py (local / Cloudflare R2), security.py
+│   ├── app/        core/ (config, db, storage local / Cloudflare R2), auth/, memes/, community/, users/, main.py
 │   ├── data/templates/   JSON + ảnh template
 │   ├── scripts/    make_templates.py, index_templates.py
 │   ├── evals/      run_eval.py + bộ dữ liệu

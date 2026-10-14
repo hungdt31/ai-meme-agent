@@ -10,3 +10,4 @@ frontend/.next/
 frontend/next-env.d.ts
 frontend/*.tsbuildinfo
 .claude/settings.local.json
+backend/env.*.yaml

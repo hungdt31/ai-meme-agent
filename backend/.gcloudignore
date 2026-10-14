@@ -1,0 +1,13 @@
+# Những file không upload lên Cloud Build khi chạy `gcloud run deploy --source .`
+.gcloudignore
+.git
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.env
+env.*.yaml
+*.db
+storage/
+tests/
