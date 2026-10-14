@@ -10,13 +10,13 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
-from app.api import router
+from app.community.router import router as community_router
 from app.core.config import get_settings
 from app.core.db import init_db
 from app.core.errors import ApiError
 from app.core.limits import limiter
-from app.social import router as social_router
-from app.users_api import router as users_router
+from app.memes.router import router as memes_router
+from app.users.router import router as users_router
 from render.templates import IMAGE_DIR
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -60,9 +60,18 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
     )
-    app.include_router(router)
+    app.include_router(memes_router)
     app.include_router(users_router)
-    app.include_router(social_router)
+    app.include_router(community_router)
+
+    @app.get("/api/health")
+    def health():
+        from agent.llm import get_llm
+
+        llm = get_llm()
+        models = llm.status() if hasattr(llm, "status") else []
+        return {"status": "ok", "fake_llm": s.use_fake_llm, "models": models}
+
     if s.storage_backend == "local":
         Path(s.local_storage_dir).mkdir(parents=True, exist_ok=True)
         app.mount("/files", StaticFiles(directory=s.local_storage_dir), name="files")
