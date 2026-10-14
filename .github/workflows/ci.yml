@@ -24,6 +24,52 @@ jobs:
       # Test chạy FakeLLM, không gọi Gemini nên không tốn quota
       - run: pytest -q
 
+  # Có thay đổi trong backend/ (hoặc chính workflow này) thì mới deploy
+  changes:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+
+  # Deploy backend lên Cloud Run khi push main và test backend đã qua.
+  # Đăng nhập bằng Workload Identity Federation (thiết lập một lần: deploy/setup-github-deploy.sh), không cần key JSON.
+  # Biến môi trường nằm sẵn trên service Cloud Run và được giữ qua mỗi revision, nên ở đây không cần secret nào.
+  deploy-backend:
+    needs: [backend, changes]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # để lấy token OIDC đăng nhập Google Cloud
+    concurrency:
+      group: deploy-backend
+      cancel-in-progress: false # không cắt ngang một lần deploy đang chạy
+    env:
+      SERVICE: easy-meme-api
+      REGION: asia-southeast1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/752511020254/locations/global/workloadIdentityPools/github/providers/ai-meme-agent
+          service_account: github-deployer@ai-agent-511607.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Deploy
+        run: gcloud run deploy "$SERVICE" --source backend --region "$REGION" --quiet
+      - name: Smoke test
+        run: |
+          url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
+          curl -fsS --retry 3 --retry-delay 5 "$url/api/health"
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

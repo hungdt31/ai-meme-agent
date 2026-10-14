@@ -18,7 +18,7 @@ Backend (run from `backend/`, venv already at `backend/.venv`):
 .venv/bin/python -m evals.run_eval templates|safety|quality [--limit N]
 ```
 
-Frontend (from `frontend/`): `npm run dev`, `npm run typecheck`, `npm run build`. No ESLint. CI (`.github/workflows/ci.yml`) = backend ruff + pytest on Python 3.12, frontend typecheck + build on Node 22.
+Frontend (from `frontend/`): `npm run dev`, `npm run typecheck`, `npm run build`. No ESLint. CI (`.github/workflows/ci.yml`) = backend ruff + pytest on Python 3.12, frontend typecheck + build on Node 22. On push to `main`, if `backend/**` changed and backend tests pass, job `deploy-backend` runs `gcloud run deploy easy-meme-api --source backend` (asia-southeast1) authenticated via Workload Identity Federation (one-time setup: `deploy/setup-github-deploy.sh`); env vars live on the Cloud Run service and persist across revisions. Frontend deploys via Vercel's Git integration.
 
 Without `GOOGLE_API_KEY` (or with `LLM_FAKE=1`) the backend silently uses `FakeLLM`; `GET /api/health` reports `fake_llm`.
 
