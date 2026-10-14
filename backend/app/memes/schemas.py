@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field
 
@@ -27,31 +27,98 @@ def og_key(image_key: str) -> str:
     return image_key.rsplit(".", 1)[0] + ".jpg"
 
 
-def owner_out(user: User | None) -> dict | None:
-    """Thông tin công khai của chủ meme. Hồ sơ riêng tư thì không lộ ai là người tạo."""
-    if user is None or not user.profile_public:
-        return None
-    return {"username": user.username, "display_name": user.display_name, "avatar_url": user.avatar_url}
+# ---------- response ----------
 
 
-def meme_out(m: Meme, owner: User | None = None, post_id: str | None = None) -> dict:
-    return {
-        "id": m.id,
-        "job_id": m.job_id,
-        "image_url": get_storage().url(m.image_key),
-        "og_image_url": get_storage().url(og_key(m.image_key)),
-        "template_id": m.template_id,
-        "captions": m.captions,
-        "boxes": [
-            {"id": b["id"], "style": b["style"], "max_chars": b["max_chars"], "hint": b.get("hint", "")}
-            for b in m.boxes
-        ],
-        "scores": m.scores,
-        "rank": m.rank,
-        "parent_id": m.parent_id,
-        "hidden": m.hidden,
-        "owner": owner_out(owner),
-        "owner_id": m.user_id,  # id ngẫu nhiên, để frontend biết meme có phải của mình (kể cả hồ sơ riêng tư)
-        "post_id": post_id,  # đã chia sẻ lên cộng đồng thì là id bài viết
-        "created_at": m.created_at.isoformat(),
-    }
+class BoxOut(BaseModel):
+    id: str
+    style: str
+    max_chars: int
+    hint: str = ""
+
+
+class OwnerOut(BaseModel):
+    """Thông tin công khai của chủ meme."""
+
+    username: str
+    display_name: str
+    avatar_url: str | None
+
+
+class MemeOut(BaseModel):
+    id: str
+    job_id: str
+    image_url: str
+    og_image_url: str
+    template_id: str | None
+    captions: dict[str, str]
+    boxes: list[BoxOut]
+    scores: dict[str, Any] | None
+    rank: int | None
+    parent_id: str | None
+    hidden: bool
+    owner: OwnerOut | None
+    owner_id: str | None  # id ngẫu nhiên, để frontend biết meme có phải của mình (kể cả hồ sơ riêng tư)
+    post_id: str | None  # đã chia sẻ lên cộng đồng thì là id bài viết
+    created_at: str
+
+    @classmethod
+    def of(cls, m: Meme, owner: User | None = None, post_id: str | None = None, **extra: Any) -> Self:
+        storage = get_storage()
+        return cls(
+            id=m.id,
+            job_id=m.job_id,
+            image_url=storage.url(m.image_key),
+            og_image_url=storage.url(og_key(m.image_key)),
+            template_id=m.template_id,
+            captions=m.captions,
+            boxes=[BoxOut.model_validate(b) for b in m.boxes],  # bỏ toạ độ, chỉ giữ thông tin cho ô sửa chữ
+            scores=m.scores,
+            rank=m.rank,
+            parent_id=m.parent_id,
+            hidden=m.hidden,
+            # Hồ sơ riêng tư thì không lộ ai là người tạo
+            owner=OwnerOut.model_validate(owner, from_attributes=True) if owner and owner.profile_public else None,
+            owner_id=m.user_id,
+            post_id=post_id,
+            created_at=m.created_at.isoformat(),
+            **extra,
+        )
+
+
+class MemeWithTopic(MemeOut):
+    topic: str | None
+
+
+class RerenderOut(MemeOut):
+    overflow: bool
+    overflow_boxes: list[str]
+
+
+class UploadOut(BaseModel):
+    upload_id: str
+
+
+class JobCreated(BaseModel):
+    job_id: str
+
+
+class JobOut(BaseModel):
+    id: str
+    status: str  # created | running | done | refused | failed
+    topic: str | None
+    style: str | None
+    error: str | None
+    memes: list[MemeOut]
+
+
+class TemplateOut(BaseModel):
+    id: str
+    name: str
+    when_to_use: str
+    thumb_url: str
+
+
+class StyleOut(BaseModel):
+    id: str
+    label: str

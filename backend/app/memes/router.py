@@ -17,7 +17,19 @@ from app.core.security import client_hash
 from app.memes import service
 from app.memes.models import Job
 from app.memes.runner import stream_job
-from app.memes.schemas import CreateJob, Report, Rerender, meme_out
+from app.memes.schemas import (
+    CreateJob,
+    JobCreated,
+    JobOut,
+    MemeOut,
+    MemeWithTopic,
+    Report,
+    Rerender,
+    RerenderOut,
+    StyleOut,
+    TemplateOut,
+    UploadOut,
+)
 from render.templates import IMAGE_DIR, load_templates
 
 router = APIRouter(prefix="/api")
@@ -30,17 +42,17 @@ def _owner(session: Session, user_id: str | None) -> User | None:
 # ---------- uploads ----------
 
 
-@router.post("/uploads")
+@router.post("/uploads", response_model=UploadOut)
 @limiter.limit(lambda: get_settings().rate_limit_uploads)
 async def upload(request: Request, file: UploadFile = File(...)):
     data = await file.read(get_settings().max_upload_mb * 1024 * 1024 + 1)
-    return {"upload_id": service.save_upload(data, file.content_type)}
+    return UploadOut(upload_id=service.save_upload(data, file.content_type))
 
 
 # ---------- jobs ----------
 
 
-@router.post("/jobs")
+@router.post("/jobs", response_model=JobCreated)
 def create_job(
     request: Request,
     body: CreateJob,
@@ -48,7 +60,7 @@ def create_job(
     session: Session = Depends(get_session),
 ):
     job = service.create_job(session, body, user, client_hash(request))
-    return {"job_id": job.id}
+    return JobCreated(job_id=job.id)
 
 
 @router.post("/jobs/{job_id}/run")
@@ -64,32 +76,32 @@ def run_job(job_id: str, session: Session = Depends(get_session)):
     )
 
 
-@router.get("/jobs/{job_id}")
+@router.get("/jobs/{job_id}", response_model=JobOut)
 def get_job(job_id: str, session: Session = Depends(get_session)):
     job = service.get_job(session, job_id)
     owner = _owner(session, job.user_id)
-    return {
-        "id": job.id,
-        "status": job.status,
-        "topic": job.topic,
-        "style": job.style,
-        "error": job.error,
-        "memes": [meme_out(m, owner) for m in service.job_results(session, job_id)],
-    }
+    return JobOut(
+        id=job.id,
+        status=job.status,
+        topic=job.topic,
+        style=job.style,
+        error=job.error,
+        memes=[MemeOut.of(m, owner) for m in service.job_results(session, job_id)],
+    )
 
 
 # ---------- memes ----------
 
 
-@router.get("/memes/{meme_id}")
+@router.get("/memes/{meme_id}", response_model=MemeWithTopic)
 def get_meme(meme_id: str, session: Session = Depends(get_session)):
     m = service.get_visible_meme(session, meme_id)
     job = session.get(Job, m.job_id)
-    out = meme_out(m, _owner(session, m.user_id), post_id=post_ids(session, [m.id]).get(m.id))
-    return out | {"topic": job.topic if job else None}
+    post_id = post_ids(session, [m.id]).get(m.id)
+    return MemeWithTopic.of(m, _owner(session, m.user_id), post_id, topic=job.topic if job else None)
 
 
-@router.post("/memes/{meme_id}/rerender")
+@router.post("/memes/{meme_id}/rerender", response_model=RerenderOut)
 @limiter.limit(lambda: get_settings().rate_limit_rerender)
 def rerender(
     request: Request,
@@ -101,10 +113,9 @@ def rerender(
     m = service.get_visible_meme(session, meme_id)
     service.require_owner(m, user)
     new, result = service.rerender(session, m, body.captions)
-    return meme_out(new, _owner(session, new.user_id)) | {
-        "overflow": result.overflow,
-        "overflow_boxes": result.overflow_boxes,
-    }
+    return RerenderOut.of(
+        new, _owner(session, new.user_id), overflow=result.overflow, overflow_boxes=result.overflow_boxes
+    )
 
 
 @router.delete("/memes/{meme_id}", status_code=204)
@@ -122,16 +133,16 @@ def report(meme_id: str, body: Report, session: Session = Depends(get_session)):
 # ---------- danh mục ----------
 
 
-@router.get("/templates")
+@router.get("/templates", response_model=list[TemplateOut])
 def templates():
     base = get_settings().public_base_url.rstrip("/")
     return [
-        {"id": t.id, "name": t.name, "when_to_use": t.when_to_use, "thumb_url": f"{base}/static/templates/{t.image}"}
+        TemplateOut(id=t.id, name=t.name, when_to_use=t.when_to_use, thumb_url=f"{base}/static/templates/{t.image}")
         for t in load_templates().values()
         if (IMAGE_DIR / t.image).exists()
     ]
 
 
-@router.get("/styles")
+@router.get("/styles", response_model=list[StyleOut])
 def styles():
-    return [{"id": k, "label": v.split(":")[0]} for k, v in STYLES.items()]
+    return [StyleOut(id=k, label=v.split(":")[0]) for k, v in STYLES.items()]

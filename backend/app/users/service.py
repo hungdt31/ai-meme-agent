@@ -12,25 +12,25 @@ from app.community import service as community
 from app.core.errors import ApiError
 from app.memes import service as memes
 from app.memes.quota import get_quota
-from app.memes.schemas import meme_out
-from app.users.schemas import UpdateMe
+from app.memes.schemas import MemeWithTopic
+from app.users.schemas import MemeCursorPage, MemePage, MeOut, PublicProfileOut, QuotaOut, StatsOut, UpdateMe
 
 PROFILE_PAGE_SIZE = 24
 
 
-def me_out(session: Session, user: User, client_hash: str) -> dict:
+def me_out(session: Session, user: User, client_hash: str) -> MeOut:
     posts, likes = community.user_stats(session, user.id)
-    return {
-        "id": user.id,
-        "username": user.username,
-        "display_name": user.display_name,
-        "avatar_url": user.avatar_url,
-        "email": user.email,  # chỉ trả cho chính chủ
-        "profile_public": user.profile_public,
-        "created_at": user.created_at.isoformat(),
-        "stats": {"memes": memes.count_owned(session, user.id), "posts": posts, "likes": likes},
-        "quota": get_quota(session, user, client_hash).as_dict(),
-    }
+    return MeOut(
+        id=user.id,
+        username=user.username,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        email=user.email,
+        profile_public=user.profile_public,
+        created_at=user.created_at.isoformat(),
+        stats=StatsOut(memes=memes.count_owned(session, user.id), posts=posts, likes=likes),
+        quota=QuotaOut(**get_quota(session, user, client_hash).as_dict()),
+    )
 
 
 def update_profile(session: Session, user: User, body: UpdateMe) -> None:
@@ -57,35 +57,32 @@ def delete_account(session: Session, user: User) -> None:
     session.commit()
 
 
-def _memes_out(session: Session, rows: list[tuple], owner: User | None) -> list[dict]:
+def _memes_out(session: Session, rows: list[tuple], owner: User | None) -> list[MemeWithTopic]:
     posted = community.post_ids(session, [m.id for m, _ in rows])
-    return [meme_out(m, owner, post_id=posted.get(m.id)) | {"topic": topic} for m, topic in rows]
+    return [MemeWithTopic.of(m, owner, posted.get(m.id), topic=topic) for m, topic in rows]
 
 
-def my_memes(session: Session, user: User, page: int, page_size: int) -> dict:
+def my_memes(session: Session, user: User, page: int, page_size: int) -> MemePage:
     """Phân trang theo số trang (cho trang Meme của tôi)."""
     total = memes.count_owned(session, user.id)
     pages = max(1, -(-total // page_size))
     page = min(page, pages)
     rows = memes.list_owned(session, user.id, limit=page_size, offset=(page - 1) * page_size)
     items = _memes_out(session, rows, user)
-    return {"items": items, "page": page, "pages": pages, "total": total, "page_size": page_size}
+    return MemePage(items=items, page=page, pages=pages, total=total, page_size=page_size)
 
 
-def public_profile(session: Session, username: str, before: datetime | None) -> dict:
+def public_profile(session: Session, username: str, before: datetime | None) -> PublicProfileOut:
     user = session.scalar(select(User).where(User.username == username.lower()))
     if user is None or user.is_banned or not user.profile_public:
         raise ApiError(404, "not_found", "Không tìm thấy người dùng")
     rows = memes.list_owned(session, user.id, limit=PROFILE_PAGE_SIZE + 1, before=before)
     items = _memes_out(session, rows[:PROFILE_PAGE_SIZE], user)
-    return {
-        "username": user.username,
-        "display_name": user.display_name,
-        "avatar_url": user.avatar_url,
-        "joined_at": user.created_at.isoformat(),
-        "meme_count": memes.count_owned(session, user.id),
-        "memes": {
-            "items": items,
-            "next_before": items[-1]["created_at"] if len(rows) > PROFILE_PAGE_SIZE else None,
-        },
-    }
+    return PublicProfileOut(
+        username=user.username,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        joined_at=user.created_at.isoformat(),
+        meme_count=memes.count_owned(session, user.id),
+        memes=MemeCursorPage(items=items, next_before=items[-1].created_at if len(rows) > PROFILE_PAGE_SIZE else None),
+    )

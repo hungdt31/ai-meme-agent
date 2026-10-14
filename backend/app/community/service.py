@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.models import User
 from app.community.models import Comment, Post, PostLike
-from app.community.schemas import comment_out, post_out
+from app.community.schemas import CommentOut, PostOut
 from app.core.config import get_settings
 from app.core.errors import ApiError
 from app.core.time import aware
@@ -32,7 +32,7 @@ def _users(session: Session, ids: set[str]) -> dict[str, User]:
     return {u.id: u for u in session.scalars(select(User).where(User.id.in_(ids)))} if ids else {}
 
 
-def posts_view(session: Session, rows: list[PostRow], viewer: User | None) -> list[dict]:
+def posts_view(session: Session, rows: list[PostRow], viewer: User | None) -> list[PostOut]:
     """Dữ liệu bài viết kèm tác giả và trạng thái tim của người xem (hai truy vấn cho cả trang)."""
     if not rows:
         return []
@@ -47,7 +47,7 @@ def posts_view(session: Session, rows: list[PostRow], viewer: User | None) -> li
             )
         )
     return [
-        post_out(p, m, users.get(p.user_id), liked=p.id in liked, mine=viewer is not None and viewer.id == p.user_id)
+        PostOut.of(p, m, users.get(p.user_id), liked=p.id in liked, mine=viewer is not None and viewer.id == p.user_id)
         for p, m in rows
     ]
 
@@ -195,14 +195,14 @@ def set_like(session: Session, user: User, post_id: str, liked: bool) -> int:
 # ---------- bình luận ----------
 
 
-def comments_view(session: Session, post: Post, viewer: User | None) -> list[dict]:
+def comments_view(session: Session, post: Post, viewer: User | None) -> list[CommentOut]:
     comments = session.scalars(
         select(Comment).where(Comment.post_id == post.id).order_by(Comment.created_at).limit(200)
     ).all()
     users = _users(session, {c.user_id for c in comments})
     return [
         # chủ bình luận và chủ bài đều xoá được
-        comment_out(c, users.get(c.user_id), can_delete=viewer is not None and viewer.id in (c.user_id, post.user_id))
+        CommentOut.of(c, users.get(c.user_id), can_delete=viewer is not None and viewer.id in (c.user_id, post.user_id))
         for c in comments
     ]
 

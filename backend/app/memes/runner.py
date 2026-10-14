@@ -11,7 +11,7 @@ from app.auth.models import User
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.memes.models import Job
-from app.memes.schemas import meme_out
+from app.memes.schemas import MemeOut
 from app.memes.service import persist_winners
 
 log = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ async def stream_job(job_id: str) -> AsyncIterator[dict]:
                 job.status = "done"
                 session.flush()
                 owner = session.get(User, job.user_id) if job.user_id else None
-                yield {"type": "result", "memes": [meme_out(m, owner) for m in memes]}
+                yield {"type": "result", "memes": [MemeOut.of(m, owner).model_dump() for m in memes]}
         finally:
             job.duration_ms = int((time.monotonic() - started) * 1000)
             session.commit()

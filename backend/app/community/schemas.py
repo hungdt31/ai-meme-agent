@@ -1,3 +1,5 @@
+from typing import Self
+
 from pydantic import BaseModel, Field
 
 from app.auth.models import User
@@ -27,38 +29,89 @@ class CreateComment(BaseModel):
     body: str = Field(min_length=1, max_length=MAX_COMMENT)
 
 
-def author_out(user: User | None) -> dict:
+# ---------- response ----------
+
+
+class AuthorOut(BaseModel):
     """Đăng bài là hành động công khai nên luôn hiện tên; chỉ có link hồ sơ khi hồ sơ để công khai."""
-    if user is None:
-        return {"username": None, "display_name": "Tài khoản đã xoá", "avatar_url": None, "profile_public": False}
-    return {
-        "username": user.username,
-        "display_name": user.display_name,
-        "avatar_url": user.avatar_url,
-        "profile_public": user.profile_public,
-    }
+
+    username: str | None
+    display_name: str
+    avatar_url: str | None
+    profile_public: bool
+
+    @classmethod
+    def of(cls, user: User | None) -> Self:
+        if user is None:
+            return cls(username=None, display_name="Tài khoản đã xoá", avatar_url=None, profile_public=False)
+        return cls.model_validate(user, from_attributes=True)
 
 
-def post_out(p: Post, m: Meme, author: User | None, *, liked: bool, mine: bool) -> dict:
-    return {
-        "id": p.id,
-        "created_at": aware(p.created_at).isoformat(),
-        "edited": p.edited_at is not None,
-        "caption": p.caption,
-        "author": author_out(author),
-        "meme": {"id": m.id, "image_url": get_storage().url(m.image_key), "captions": m.captions},
-        "like_count": p.like_count,
-        "comment_count": p.comment_count,
-        "liked": liked,
-        "mine": mine,
-    }
+class PostMemeOut(BaseModel):
+    id: str
+    image_url: str
+    captions: dict[str, str]
 
 
-def comment_out(c: Comment, author: User | None, *, can_delete: bool) -> dict:
-    return {
-        "id": c.id,
-        "created_at": aware(c.created_at).isoformat(),
-        "body": c.body,
-        "author": author_out(author),
-        "can_delete": can_delete,
-    }
+class PostOut(BaseModel):
+    id: str
+    created_at: str
+    edited: bool
+    caption: str
+    author: AuthorOut
+    meme: PostMemeOut
+    like_count: int
+    comment_count: int
+    liked: bool  # người xem đã thả tim
+    mine: bool  # người xem là người đăng
+
+    @classmethod
+    def of(cls, p: Post, m: Meme, author: User | None, *, liked: bool, mine: bool) -> Self:
+        return cls(
+            id=p.id,
+            created_at=aware(p.created_at).isoformat(),
+            edited=p.edited_at is not None,
+            caption=p.caption,
+            author=AuthorOut.of(author),
+            meme=PostMemeOut(id=m.id, image_url=get_storage().url(m.image_key), captions=m.captions),
+            like_count=p.like_count,
+            comment_count=p.comment_count,
+            liked=liked,
+            mine=mine,
+        )
+
+
+class CommentOut(BaseModel):
+    id: str
+    created_at: str
+    body: str
+    author: AuthorOut
+    can_delete: bool  # chủ bình luận và chủ bài đều xoá được
+
+    @classmethod
+    def of(cls, c: Comment, author: User | None, *, can_delete: bool) -> Self:
+        return cls(
+            id=c.id,
+            created_at=aware(c.created_at).isoformat(),
+            body=c.body,
+            author=AuthorOut.of(author),
+            can_delete=can_delete,
+        )
+
+
+class PostDetail(PostOut):
+    comments: list[CommentOut]
+
+
+class FeedPage(BaseModel):
+    items: list[PostOut]
+    next_before: str | None
+
+
+class PostList(BaseModel):
+    items: list[PostOut]
+
+
+class LikeOut(BaseModel):
+    liked: bool
+    like_count: int
