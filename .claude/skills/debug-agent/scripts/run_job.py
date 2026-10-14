@@ -42,8 +42,8 @@ from PIL import Image  # noqa: E402
 from agent.graph import build_graph, initial_state  # noqa: E402
 from agent.llm import get_llm  # noqa: E402
 from agent.nodes import Deps  # noqa: E402
-from app.config import get_settings  # noqa: E402
-from app.storage import LocalStorage  # noqa: E402
+from app.core.config import get_settings  # noqa: E402
+from app.core.storage import LocalStorage  # noqa: E402
 from rag.search import get_index  # noqa: E402
 
 settings = get_settings()

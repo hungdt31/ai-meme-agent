@@ -14,7 +14,7 @@ from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 
-from app.config import BACKEND_DIR, get_settings
+from app.core.config import BACKEND_DIR, get_settings
 from render.templates import Template, load_templates
 
 log = logging.getLogger(__name__)

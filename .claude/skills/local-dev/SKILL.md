@@ -45,7 +45,8 @@ Không đăng nhập Google thật được bằng curl. Tạo người dùng v�
 cd backend && DATABASE_URL="sqlite:///$SCRATCH/dev.db" .venv/bin/python -c "
 import hashlib, secrets
 from datetime import UTC, datetime, timedelta
-from app.db import AuthSession, User, get_sessionmaker
+from app.core.db import get_sessionmaker
+from app.models import AuthSession, User
 with get_sessionmaker()() as s:
     u = User(google_sub='dev', email='dev@example.com', display_name='Dev', username='dev'); s.add(u); s.flush()
     t = secrets.token_urlsafe(32)

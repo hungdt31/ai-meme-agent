@@ -8,13 +8,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
-from app import auth
-from app.auth import USERNAME_RE, optional_user, require_user
-from app.db import AuthSession, Comment, Job, Meme, Post, PostLike, User, get_session
-from app.errors import ApiError
-from app.limits import limiter
-from app.quota import get_quota
-from app.security import client_hash
+from app.auth import google
+from app.auth import service as auth
+from app.auth.deps import bearer_token, optional_user, require_user
+from app.auth.service import USERNAME_RE
+from app.core.db import get_session
+from app.core.errors import ApiError
+from app.core.limits import limiter
+from app.core.security import client_hash
+from app.memes.quota import get_quota
+from app.models import AuthSession, Comment, Job, Meme, Post, PostLike, User
 from app.service import delete_meme_files, meme_out
 from app.social import post_ids, remove_posts
 
@@ -72,14 +75,14 @@ class GoogleLogin(BaseModel):
 @router.post("/auth/google")
 @limiter.limit("30/hour")
 def google_login(request: Request, body: GoogleLogin, session: Session = Depends(get_session)):
-    claims = auth.verify_google_credential(body.credential)
+    claims = google.verify_google_credential(body.credential)
     user, token, expires = auth.login_with_google(session, claims)
     return {"token": token, "expires_at": expires.isoformat(), "user": me_out(session, user, request)}
 
 
 @router.post("/auth/logout", status_code=204)
 def logout(request: Request, session: Session = Depends(get_session)):
-    auth.logout(session, request)
+    auth.logout(session, bearer_token(request))
     return Response(status_code=204)
 
 

@@ -2,7 +2,7 @@ import hashlib
 
 from fastapi import Request
 
-from app.config import get_settings
+from app.core.config import get_settings
 
 
 def client_ip(request: Request) -> str:

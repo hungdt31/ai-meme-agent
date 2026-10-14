@@ -2,8 +2,8 @@ from agent.graph import build_graph, initial_state
 from agent.llm import FakeLLM
 from agent.nodes import Deps
 from agent.state import CritiqueBatch, ImageScore
-from app.config import get_settings
-from app.storage import LocalStorage
+from app.core.config import get_settings
+from app.core.storage import LocalStorage
 from rag.search import TemplateIndex
 from render.templates import load_templates
 

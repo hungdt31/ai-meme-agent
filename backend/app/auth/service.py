@@ -9,35 +9,15 @@ import re
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
-from app.db import AuthSession, User, get_session
-from app.errors import ApiError
+from app.auth.models import AuthSession, User
+from app.core.config import get_settings
+from app.core.errors import ApiError
 from rag.search import fold
 
 USERNAME_RE = re.compile(r"^[a-z0-9_]{3,20}$")
-
-
-def verify_google_credential(credential: str) -> dict:
-    """Kiểm tra chữ ký, hạn và audience của ID token Google. Test thay hàm này bằng monkeypatch."""
-    from google.auth.transport import requests as google_requests
-    from google.oauth2 import id_token
-
-    client_id = get_settings().google_client_id
-    if not client_id:
-        raise ApiError(503, "auth_disabled", "Đăng nhập chưa được bật trên máy chủ")
-    try:
-        claims = id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
-    except ValueError as e:
-        raise ApiError(401, "invalid_credential", "Đăng nhập Google không hợp lệ, thử lại nhé") from e
-    if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
-        raise ApiError(401, "invalid_credential", "Đăng nhập Google không hợp lệ")
-    if not claims.get("email_verified"):
-        raise ApiError(401, "email_unverified", "Email Google chưa được xác minh")
-    return claims
 
 
 def _hash(token: str) -> str:
@@ -83,25 +63,14 @@ def login_with_google(session: Session, claims: dict) -> tuple[User, str, dateti
     return user, token, expires
 
 
-def _bearer(request: Request) -> str | None:
-    header = request.headers.get("authorization", "")
-    if not header.lower().startswith("bearer "):
-        return None
-    return header[7:].strip() or None
-
-
-def logout(session: Session, request: Request) -> None:
-    token = _bearer(request)
+def logout(session: Session, token: str | None) -> None:
     if token and (row := session.get(AuthSession, _hash(token))):
         session.delete(row)
         session.commit()
 
 
-def optional_user(request: Request, session: Session = Depends(get_session)) -> User | None:
-    """Người dùng hiện tại, hoặc None nếu chưa đăng nhập. Token sai hay hết hạn cũng coi như khách."""
-    token = _bearer(request)
-    if not token:
-        return None
+def user_for_token(session: Session, token: str) -> User | None:
+    """Người dùng của token phiên. Token sai, hết hạn hoặc tài khoản bị khoá thì trả None."""
     row = session.get(AuthSession, _hash(token))
     if row is None:
         return None
@@ -114,7 +83,6 @@ def optional_user(request: Request, session: Session = Depends(get_session)) -> 
     return None if user is None or user.is_banned else user
 
 
-def require_user(user: User | None = Depends(optional_user)) -> User:
-    if user is None:
-        raise ApiError(401, "unauthorized", "Bạn cần đăng nhập")
-    return user
+def end_all_sessions(session: Session, user_id: str) -> None:
+    for row in session.scalars(select(AuthSession).where(AuthSession.user_id == user_id)):
+        session.delete(row)

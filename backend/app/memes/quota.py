@@ -10,8 +10,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
-from app.db import Job, User
+from app.core.config import get_settings
+from app.models import Job, User
 
 
 @dataclass

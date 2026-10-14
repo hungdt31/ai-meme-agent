@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 from agent.graph import get_graph, initial_state
 from agent.llm import LLMError
 from agent.state import Candidate
-from app.config import get_settings
-from app.db import Job, Meme, User, get_sessionmaker, new_id
-from app.storage import get_storage
+from app.core.config import get_settings
+from app.core.db import get_sessionmaker, new_id
+from app.core.storage import get_storage
+from app.models import Job, Meme, User
 from render.renderer import to_jpeg
 from render.templates import UPLOAD_LAYOUTS, get_template
 

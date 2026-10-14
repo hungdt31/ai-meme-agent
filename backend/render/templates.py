@@ -7,7 +7,7 @@ from typing import Literal
 from PIL import Image
 from pydantic import BaseModel, Field
 
-from app.config import BACKEND_DIR
+from app.core.config import BACKEND_DIR
 
 TEMPLATE_DIR = BACKEND_DIR / "data" / "templates"
 IMAGE_DIR = TEMPLATE_DIR / "images"

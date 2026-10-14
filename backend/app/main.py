@@ -11,10 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from app.api import router
-from app.config import get_settings
-from app.db import init_db
-from app.errors import ApiError
-from app.limits import limiter
+from app.core.config import get_settings
+from app.core.db import init_db
+from app.core.errors import ApiError
+from app.core.limits import limiter
 from app.social import router as social_router
 from app.users_api import router as users_router
 from render.templates import IMAGE_DIR

@@ -85,7 +85,7 @@ def test_anonymous_memes_stay_editable(client):
 
 
 def test_quota_is_per_account_and_lower_for_guests(client, login):
-    from app.config import get_settings
+    from app.core.config import get_settings
 
     s = get_settings()
     old = s.quota_anon_per_day, s.quota_user_per_day
@@ -129,7 +129,7 @@ def test_outdated_database_is_reported_clearly(tmp_path):
     """Bảng cũ thiếu cột mới: báo lỗi rõ ràng lúc khởi động thay vì lỗi khó hiểu khi đang chạy."""
     import pytest
 
-    from app.db import SchemaOutdated, init_db
+    from app.core.db import SchemaOutdated, init_db
 
     engine = create_engine(f"sqlite:///{tmp_path}/old.db")
     with engine.begin() as conn:
@@ -140,7 +140,8 @@ def test_outdated_database_is_reported_clearly(tmp_path):
 
 
 def test_failed_jobs_do_not_use_quota(client, login):
-    from app.db import Job, get_sessionmaker
+    from app.core.db import get_sessionmaker
+    from app.models import Job
 
     h = login(sub="q-failed", email="q-failed@example.com")
     uid = h["user"]["id"]

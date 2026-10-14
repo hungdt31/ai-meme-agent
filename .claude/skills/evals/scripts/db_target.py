@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path.cwd()))
 from sqlalchemy import inspect, text  # noqa: E402
 from sqlalchemy.engine import make_url  # noqa: E402
 
-from app.config import get_settings  # noqa: E402
+from app.core.config import get_settings  # noqa: E402
 
 url = make_url(get_settings().database_url)
 print("Database:", url.render_as_string(hide_password=True))
@@ -18,7 +18,7 @@ if url.get_backend_name() == "sqlite" and url.database and not Path(url.database
     print("File SQLite chưa tồn tại (sẽ được tạo khi chạy).")  # không mở để tránh tạo file rỗng
     sys.exit(0)
 
-from app.db import get_engine  # noqa: E402
+from app.core.db import get_engine  # noqa: E402
 
 engine = get_engine()
 tables = set(inspect(engine).get_table_names())

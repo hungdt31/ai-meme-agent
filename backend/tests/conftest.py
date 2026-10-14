@@ -33,7 +33,7 @@ def client():
 @pytest.fixture
 def login(client, monkeypatch):
     """Đăng nhập giả: thay bước xác thực token Google bằng claims cố định."""
-    from app import auth
+    from app.auth import google
 
     def _login(sub: str = "google-sub-1", email: str = "lan@example.com", name: str = "Lan Nguyễn") -> dict:
         claims = {
@@ -44,7 +44,7 @@ def login(client, monkeypatch):
             "email_verified": True,
             "iss": "accounts.google.com",
         }
-        monkeypatch.setattr(auth, "verify_google_credential", lambda credential: claims)
+        monkeypatch.setattr(google, "verify_google_credential", lambda credential: claims)
         data = client.post("/api/auth/google", json={"credential": "x" * 40}).json()
         return {"Authorization": f"Bearer {data['token']}", "user": data["user"]}
 

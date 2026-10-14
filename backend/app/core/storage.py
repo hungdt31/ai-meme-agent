@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Protocol
 
-from app.config import get_settings
+from app.core.config import get_settings
 
 
 class Storage(Protocol):

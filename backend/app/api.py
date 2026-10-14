@@ -10,16 +10,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from agent.prompts import STYLES
-from app.auth import optional_user, require_user
-from app.config import get_settings
-from app.db import Job, Meme, User, get_session, new_id
-from app.errors import ApiError
-from app.limits import limiter
-from app.quota import get_quota
-from app.security import client_hash
+from app.auth.deps import optional_user, require_user
+from app.core.config import get_settings
+from app.core.db import get_session, new_id
+from app.core.errors import ApiError
+from app.core.limits import limiter
+from app.core.security import client_hash
+from app.core.storage import get_storage
+from app.memes.quota import get_quota
+from app.models import Job, Meme, User
 from app.service import delete_meme_files, meme_out, save_meme_image, stream_job
 from app.social import post_ids
-from app.storage import get_storage
 from render.renderer import prepare_upload, render_meme
 from render.templates import IMAGE_DIR, Box, get_template, load_templates
 

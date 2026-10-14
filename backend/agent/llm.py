@@ -20,7 +20,7 @@ from agent.state import (
     MemeIntent,
     TemplateChoice,
 )
-from app.config import get_settings
+from app.core.config import get_settings
 
 log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)

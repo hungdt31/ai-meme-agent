@@ -10,12 +10,13 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth import optional_user, require_user
-from app.config import get_settings
-from app.db import Comment, Meme, Post, PostLike, User, get_session
-from app.errors import ApiError
-from app.limits import limiter
-from app.storage import get_storage
+from app.auth.deps import optional_user, require_user
+from app.core.config import get_settings
+from app.core.db import get_session
+from app.core.errors import ApiError
+from app.core.limits import limiter
+from app.core.storage import get_storage
+from app.models import Comment, Meme, Post, PostLike, User
 
 router = APIRouter(prefix="/api")
 PAGE_SIZE = 20

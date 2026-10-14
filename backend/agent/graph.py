@@ -5,8 +5,8 @@ from langgraph.graph import END, START, StateGraph
 from agent.llm import get_llm
 from agent.nodes import Deps, Nodes
 from agent.state import MemeState
-from app.config import get_settings
-from app.storage import get_storage
+from app.core.config import get_settings
+from app.core.storage import get_storage
 from rag.search import get_index
 
 

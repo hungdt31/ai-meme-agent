@@ -20,8 +20,8 @@ from agent.state import (
     MemeState,
     TemplateChoice,
 )
-from app.config import Settings
-from app.storage import Storage
+from app.core.config import Settings
+from app.core.storage import Storage
 from rag.search import TemplateIndex
 from render.renderer import render_meme
 from render.templates import UPLOAD_LAYOUTS, Box, Template
