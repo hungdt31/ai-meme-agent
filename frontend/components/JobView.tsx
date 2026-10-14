@@ -70,8 +70,8 @@ export function JobView({ jobId }: { jobId: string }) {
       for (let i = 0; i < 40; i++) {
         const job = await api.job(jobId);
         if (job.status === "done") return setMemes(job.memes);
-        if (job.status === "refused") return setRefusal({ message: "Chủ đề này không chế được. Thử chủ đề khác nhé.", suggestions: [] });
-        if (job.status === "failed") return setError("Lần chế này bị lỗi. Thử lại nhé.");
+        if (job.status === "refused") return setRefusal({ message: "Chủ đề này không tạo được. Thử chủ đề khác nhé.", suggestions: [] });
+        if (job.status === "failed") return setError("Lần tạo này bị lỗi. Thử lại nhé.");
         await new Promise((r) => setTimeout(r, 1500));
       }
       setError("Chạy quá lâu, thử tải lại trang.");
@@ -135,8 +135,17 @@ export function JobView({ jobId }: { jobId: string }) {
           {memes.map((m) => (
             <MemeCard key={m.id} meme={m} />
           ))}
+          {memes.length > 0 && !memes[0].owner_id && (
+            <p className="rounded-2xl bg-sand px-4 py-3 text-center text-sm text-body">
+              Muốn chia sẻ meme lên cộng đồng cho mọi người thả tim, bình luận?{" "}
+              <Link href="/login?next=/" className="font-semibold underline">
+                Đăng nhập
+              </Link>{" "}
+              rồi tạo lại nhé: meme tạo khi chưa đăng nhập không có chủ nên không đăng được.
+            </p>
+          )}
           <Link href="/" className="flex min-h-12 items-center justify-center rounded-2xl border border-line-strong bg-white text-[15px]">
-            Chế cái khác
+            Tạo cái khác
           </Link>
         </section>
       )}

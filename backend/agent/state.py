@@ -57,11 +57,6 @@ class CritiqueBatch(BaseModel):
     scores: list[ImageScore]
 
 
-class BaselineMeme(BaseModel):
-    template_id: str
-    texts: list[BoxText]
-
-
 # ---------- State của graph ----------
 
 

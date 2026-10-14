@@ -1,33 +1,29 @@
 import io
 import json
-import math
-import random
-import time
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
-from slowapi import Limiter
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from agent.prompts import STYLES
 from app.auth import optional_user, require_user
 from app.config import get_settings
-from app.db import Job, Meme, User, Vote, get_session, new_id, pair_key
+from app.db import Job, Meme, User, get_session, new_id
 from app.errors import ApiError
+from app.limits import limiter
 from app.quota import get_quota
-from app.security import client_hash, client_ip, sign_pair, verify_pair
+from app.security import client_hash
 from app.service import delete_meme_files, meme_out, save_meme_image, stream_job
+from app.social import post_ids
 from app.storage import get_storage
 from render.renderer import prepare_upload, render_meme
 from render.templates import IMAGE_DIR, Box, get_template, load_templates
 
 router = APIRouter(prefix="/api")
-limiter = Limiter(key_func=client_ip)
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
@@ -159,7 +155,7 @@ def _get_meme(session: Session, meme_id: str) -> Meme:
 def _require_owner(m: Meme, user: User | None) -> None:
     """Meme có chủ thì chỉ chủ được sửa hoặc xoá. Meme của khách thì ai có link job cũng sửa được."""
     if m.user_id and (user is None or user.id != m.user_id):
-        raise ApiError(403, "forbidden", "Chỉ người chế meme này mới sửa hoặc xoá được")
+        raise ApiError(403, "forbidden", "Chỉ người tạo meme này mới sửa hoặc xoá được")
 
 
 @router.get("/memes/{meme_id}")
@@ -167,7 +163,7 @@ def get_meme(meme_id: str, session: Session = Depends(get_session)):
     m = _get_meme(session, meme_id)
     job = session.get(Job, m.job_id)
     owner = session.get(User, m.user_id) if m.user_id else None
-    return meme_out(m, owner) | {"topic": job.topic if job else None}
+    return meme_out(m, owner, post_id=post_ids(session, [m.id]).get(m.id)) | {"topic": job.topic if job else None}
 
 
 class Rerender(BaseModel):
@@ -249,103 +245,6 @@ def report(meme_id: str, body: Report, session: Session = Depends(get_session)):
     return Response(status_code=204)
 
 
-# ---------- đấu trường ----------
-
-
-@router.get("/arena/pair")
-def arena_pair(user: User | None = Depends(optional_user), session: Session = Depends(get_session)):
-    jobs = session.scalars(select(Job).where(Job.arena.is_(True), Job.status == "done")).all()
-    by_topic: dict[str, dict[str, Job]] = {}
-    for j in jobs:
-        by_topic.setdefault(j.topic or "", {})[j.variant] = j
-    pairs = []
-    for topic, variants in by_topic.items():
-        if {"agent", "baseline"} <= variants.keys():
-            memes = [
-                session.scalars(
-                    select(Meme).where(Meme.job_id == variants[v].id, Meme.rank == 1, Meme.hidden.is_(False))
-                ).first()
-                for v in ("agent", "baseline")
-            ]
-            if all(memes):
-                pairs.append((topic, memes))
-    if not pairs:
-        raise ApiError(404, "no_pairs", "Đấu trường chưa có dữ liệu")
-    if user:  # mỗi người chỉ thấy các cặp chưa bầu
-        voted = set(session.scalars(select(Vote.pair_key).where(Vote.user_id == user.id)))
-        pairs = [(t, ms) for t, ms in pairs if pair_key(ms[0].id, ms[1].id) not in voted]
-        if not pairs:
-            raise ApiError(404, "all_voted", "Bạn đã bầu hết các cặp hiện có, cảm ơn bạn!")
-    topic, memes = random.choice(pairs)
-    random.shuffle(memes)
-    a, b = memes
-    url = get_storage().url
-    return {
-        "pair_token": sign_pair(a.id, b.id),
-        "topic": topic,
-        "a": {"id": a.id, "image_url": url(a.image_key)},
-        "b": {"id": b.id, "image_url": url(b.image_key)},
-    }
-
-
-class VoteIn(BaseModel):
-    pair_token: str
-    winner: Literal["a", "b", "tie"]
-
-
-@router.post("/arena/vote", status_code=204)
-@limiter.limit(lambda: get_settings().rate_limit_votes)
-def arena_vote(
-    request: Request,
-    body: VoteIn,
-    user: User | None = Depends(optional_user),
-    session: Session = Depends(get_session),
-):
-    data = verify_pair(body.pair_token)
-    if not data:
-        raise ApiError(400, "invalid_input", "Cặp meme không hợp lệ hoặc đã hết hạn")
-    if time.time() - data["t"] < get_settings().min_vote_seconds:
-        return Response(status_code=204)  # bấm quá nhanh: bỏ qua phiếu, không báo lỗi
-    key = pair_key(data["a"], data["b"])
-    if user and session.scalar(select(Vote.id).where(Vote.user_id == user.id, Vote.pair_key == key)):
-        return Response(status_code=204)  # đã bầu cặp này: giữ phiếu đầu tiên
-    session.add(
-        Vote(
-            meme_a=data["a"],
-            meme_b=data["b"],
-            winner=body.winner,
-            client_hash=client_hash(request),
-            user_id=user.id if user else None,
-            pair_key=key,
-        )
-    )
-    try:
-        session.commit()
-    except IntegrityError:  # hai request bầu cùng lúc
-        session.rollback()
-    return Response(status_code=204)
-
-
-@router.get("/arena/stats")
-def arena_stats(session: Session = Depends(get_session)):
-    variants = dict(session.execute(select(Meme.id, Meme.variant)).all())
-    n, agent_points = 0, 0.0
-    for v in session.scalars(select(Vote)).all():
-        va, vb = variants.get(v.meme_a), variants.get(v.meme_b)
-        if {va, vb} != {"agent", "baseline"}:
-            continue
-        n += 1
-        if v.winner == "tie":
-            agent_points += 0.5
-        elif (v.winner == "a") == (va == "agent"):
-            agent_points += 1
-    if not n:
-        return {"votes": 0, "agent_win_rate": None, "ci95": None}
-    p = agent_points / n
-    half = 1.96 * math.sqrt(p * (1 - p) / n)
-    return {"votes": n, "agent_win_rate": round(p, 4), "ci95": [round(max(0, p - half), 4), round(min(1, p + half), 4)]}
-
-
 # ---------- khác ----------
 
 
@@ -366,4 +265,8 @@ def styles():
 
 @router.get("/health")
 def health():
-    return {"status": "ok", "fake_llm": get_settings().use_fake_llm}
+    from agent.llm import get_llm
+
+    llm = get_llm()
+    models = llm.status() if hasattr(llm, "status") else []
+    return {"status": "ok", "fake_llm": get_settings().use_fake_llm, "models": models}

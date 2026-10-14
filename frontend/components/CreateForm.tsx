@@ -175,7 +175,7 @@ export function CreateForm({ initialTopic = "" }: { initialTopic?: string }) {
         disabled={!canSubmit}
         className="flex min-h-14 items-center justify-center rounded-2xl bg-clay-dark text-[17px] font-semibold text-white disabled:opacity-50"
       >
-        {busy ? "Đang gửi…" : "Chế meme"}
+        {busy ? "Đang gửi…" : "Tạo meme"}
       </button>
       {quota && (
         <p className="-mt-2 text-center text-sm text-muted">

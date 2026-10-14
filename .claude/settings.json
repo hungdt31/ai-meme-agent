@@ -16,7 +16,7 @@
       "Bash(git log *)",
       "Bash(.venv/bin/python ../.claude/skills/debug-agent/scripts/run_job.py *)",
       "Bash(.venv/bin/python ../.claude/skills/add-template/scripts/check_template.py *)",
-      "Bash(.venv/bin/python ../.claude/skills/arena-evals/scripts/db_target.py)",
+      "Bash(.venv/bin/python ../.claude/skills/evals/scripts/db_target.py)",
       "Bash(.claude/skills/local-dev/scripts/dev_up.sh *)",
       "Bash(.claude/skills/local-dev/scripts/dev_down.sh *)"
     ],

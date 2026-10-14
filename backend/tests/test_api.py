@@ -14,7 +14,7 @@ def _run(client, **body) -> list[dict]:
 
 
 def test_health(client):
-    assert client.get("/api/health").json() == {"status": "ok", "fake_llm": True}
+    assert client.get("/api/health").json() == {"status": "ok", "fake_llm": True, "models": []}
 
 
 def test_full_flow_create_run_get_rerender_report(client):
@@ -73,36 +73,6 @@ def test_upload_requires_image_and_consent(client):
     events, _ = _run(client, upload_id=upload_id, consent=True)
     result = next(e for e in events if e["type"] == "result")
     assert result["memes"] and result["memes"][0]["template_id"] is None
-
-
-def test_arena_pair_vote_and_stats(client):
-    from app.db import Job, Meme, get_sessionmaker
-
-    with get_sessionmaker()() as s:
-        for variant in ("agent", "baseline"):
-            job = Job(input_type="topic", topic="Chủ đề đấu trường", status="done", arena=True, variant=variant)
-            s.add(job)
-            s.flush()
-            s.add(
-                Meme(
-                    job_id=job.id,
-                    template_id="pile",
-                    boxes=[],
-                    captions={},
-                    image_key=f"memes/{variant}.webp",
-                    variant=variant,
-                    rank=1,
-                )
-            )
-        s.commit()
-
-    pair = client.get("/api/arena/pair").json()
-    assert pair["topic"] == "Chủ đề đấu trường"
-    winner = "a" if pair["a"]["image_url"].endswith("agent.webp") else "b"
-    assert client.post("/api/arena/vote", json={"pair_token": pair["pair_token"], "winner": winner}).status_code == 204
-    assert client.post("/api/arena/vote", json={"pair_token": "x.y", "winner": "a"}).status_code == 400
-    stats = client.get("/api/arena/stats").json()
-    assert stats["votes"] == 1 and stats["agent_win_rate"] == 1.0
 
 
 def test_templates_list(client):

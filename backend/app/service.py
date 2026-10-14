@@ -1,4 +1,4 @@
-"""Chạy job (stream sự kiện SSE) và lưu kết quả. Dùng chung cho API và script seed đấu trường."""
+"""Chạy job (stream sự kiện SSE) và lưu kết quả. Dùng cho API và các script."""
 
 import asyncio
 import logging
@@ -20,13 +20,13 @@ log = logging.getLogger(__name__)
 
 
 def owner_out(user: User | None) -> dict | None:
-    """Thông tin công khai của chủ meme. Hồ sơ riêng tư thì không lộ ai là người chế."""
+    """Thông tin công khai của chủ meme. Hồ sơ riêng tư thì không lộ ai là người tạo."""
     if user is None or not user.profile_public:
         return None
     return {"username": user.username, "display_name": user.display_name, "avatar_url": user.avatar_url}
 
 
-def meme_out(m: Meme, owner: User | None = None) -> dict:
+def meme_out(m: Meme, owner: User | None = None, post_id: str | None = None) -> dict:
     return {
         "id": m.id,
         "job_id": m.job_id,
@@ -43,6 +43,8 @@ def meme_out(m: Meme, owner: User | None = None) -> dict:
         "parent_id": m.parent_id,
         "hidden": m.hidden,
         "owner": owner_out(owner),
+        "owner_id": m.user_id,  # id ngẫu nhiên, để frontend biết meme có phải của mình (kể cả hồ sơ riêng tư)
+        "post_id": post_id,  # đã chia sẻ lên cộng đồng thì là id bài viết
         "created_at": m.created_at.isoformat(),
     }
 

@@ -25,6 +25,8 @@ export type Meme = {
   rank: number | null;
   parent_id: string | null;
   owner: Owner | null;
+  owner_id: string | null;
+  post_id: string | null;
   created_at: string;
   topic?: string | null;
   overflow?: boolean;
@@ -39,11 +41,30 @@ export type Me = Owner & {
   email: string;
   profile_public: boolean;
   created_at: string;
-  stats: { memes: number; votes: number };
+  stats: { memes: number; posts: number; likes: number };
   quota: Quota;
 };
 
 export type MemePage = { items: Meme[]; next_before: string | null };
+
+export type Author = Owner & { username: string | null; profile_public: boolean };
+
+export type Post = {
+  id: string;
+  created_at: string;
+  edited: boolean;
+  caption: string;
+  author: Author;
+  meme: { id: string; image_url: string; captions: Record<string, string> };
+  like_count: number;
+  comment_count: number;
+  liked: boolean;
+  mine: boolean;
+};
+
+export type PostComment = { id: string; created_at: string; body: string; author: Author; can_delete: boolean };
+
+export type PostDetail = Post & { comments: PostComment[] };
 
 export type Profile = Owner & { joined_at: string; meme_count: number; memes: MemePage };
 
@@ -138,12 +159,20 @@ export const api = {
   rerender: (id: string, captions: Record<string, string>) =>
     request<Meme & { overflow: boolean }>(`/api/memes/${id}/rerender`, json({ captions })),
   report: (id: string, reason: string) => request<void>(`/api/memes/${id}/report`, json({ reason })),
-  arenaPair: () =>
-    request<{ pair_token: string; topic: string; a: { id: string; image_url: string }; b: { id: string; image_url: string } }>(
-      "/api/arena/pair",
+  feed: (sort: "new" | "hot", before?: string) =>
+    request<{ items: Post[]; next_before: string | null }>(
+      `/api/feed?sort=${sort}${before ? `&before=${encodeURIComponent(before)}` : ""}`,
     ),
-  vote: (pair_token: string, winner: "a" | "b" | "tie") => request<void>("/api/arena/vote", json({ pair_token, winner })),
-  stats: () => request<{ votes: number; agent_win_rate: number | null; ci95: [number, number] | null }>("/api/arena/stats"),
+  userPosts: (username: string) => request<{ items: Post[] }>(`/api/users/${encodeURIComponent(username)}/posts`),
+  post: (id: string) => request<PostDetail>(`/api/posts/${id}`),
+  createPost: (meme_id: string, caption: string) => request<Post>("/api/posts", json({ meme_id, caption })),
+  editPost: (id: string, caption: string) => request<Post>(`/api/posts/${id}`, json({ caption }, "PATCH")),
+  deletePost: (id: string) => request<void>(`/api/posts/${id}`, { method: "DELETE" }),
+  reportPost: (id: string, reason: string) => request<void>(`/api/posts/${id}/report`, json({ reason })),
+  like: (id: string) => request<{ liked: boolean; like_count: number }>(`/api/posts/${id}/like`, { method: "POST" }),
+  unlike: (id: string) => request<{ liked: boolean; like_count: number }>(`/api/posts/${id}/like`, { method: "DELETE" }),
+  comment: (id: string, body: string) => request<PostComment>(`/api/posts/${id}/comments`, json({ body })),
+  deleteComment: (id: string) => request<void>(`/api/comments/${id}`, { method: "DELETE" }),
 
   loginGoogle: (credential: string) =>
     request<{ token: string; expires_at: string; user: Me }>("/api/auth/google", json({ credential })),
@@ -153,7 +182,8 @@ export const api = {
   updateMe: (body: { display_name?: string; username?: string; profile_public?: boolean }) =>
     request<Me>("/api/me", json(body, "PATCH")),
   deleteMe: () => request<void>("/api/me", { method: "DELETE" }),
-  myMemes: (before?: string) => request<MemePage>(`/api/me/memes${before ? `?before=${encodeURIComponent(before)}` : ""}`),
+  myMemes: (page = 1, pageSize = 12) =>
+    request<{ items: Meme[]; page: number; pages: number; total: number }>(`/api/me/memes?page=${page}&page_size=${pageSize}`),
   deleteMeme: (id: string) => request<void>(`/api/memes/${id}`, { method: "DELETE" }),
   profile: (username: string) => request<Profile>(`/api/users/${encodeURIComponent(username)}`),
 };

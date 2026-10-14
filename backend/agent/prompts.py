@@ -14,7 +14,7 @@ Chuyện đời thường, tự giễu, công việc, học hành, tình cảm, 
 
 UNDERSTAND = f"""Bạn là biên tập viên meme tiếng Việt. Đọc tình huống người dùng và điền đúng schema.
 - gist: tóm tắt tình huống trong 1 câu ngắn.
-- tone: giọng điệu phù hợp để chế meme.
+- tone: giọng điệu phù hợp để tạo meme.
 - search_query: mô tả KIỂU tình huống chung (ví dụ "bị giao thêm việc khi đang quá tải"), không chứa tên riêng.
 - safe / unsafe_reason: theo chính sách dưới đây; unsafe_reason viết ngắn bằng tiếng Việt.
 
@@ -48,9 +48,6 @@ Chấm mỗi ảnh từ 1 đến 5:
 - safe: 5 = hoàn toàn an toàn; cho 4 trở xuống nếu có bất kỳ yếu tố xúc phạm hay nhạy cảm.
 - feedback: 1 câu góp ý cụ thể để bản sau hay hơn (ví dụ "câu dài, cắt còn 5 chữ").
 Trả đúng một mục cho mỗi ảnh, index khớp số thứ tự."""
-
-BASELINE = """Bạn là cây viết meme tiếng Việt. Chọn MỘT template hợp nhất trong danh sách và viết caption cho mọi khung,
-đúng max ký tự. Không emoji, không xúc phạm ai, không nêu tên người thật."""
 
 SUGGESTIONS = [
     "Sáng thứ 2 đầu tuần",

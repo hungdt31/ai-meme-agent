@@ -2,20 +2,21 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app import auth
-from app.api import limiter
 from app.auth import USERNAME_RE, optional_user, require_user
-from app.db import AuthSession, Job, Meme, User, Vote, get_session
+from app.db import AuthSession, Comment, Job, Meme, Post, PostLike, User, get_session
 from app.errors import ApiError
+from app.limits import limiter
 from app.quota import get_quota
 from app.security import client_hash
 from app.service import delete_meme_files, meme_out
+from app.social import post_ids, remove_posts
 
 router = APIRouter(prefix="/api")
 PAGE_SIZE = 24
@@ -23,7 +24,8 @@ PAGE_SIZE = 24
 
 def me_out(session: Session, user: User, request: Request) -> dict:
     memes = session.scalar(select(func.count()).select_from(Meme).where(*_owned_final(user.id))) or 0
-    votes = session.scalar(select(func.count()).select_from(Vote).where(Vote.user_id == user.id)) or 0
+    posts = session.scalar(select(func.count()).select_from(Post).where(Post.user_id == user.id)) or 0
+    likes = session.scalar(select(func.sum(Post.like_count)).where(Post.user_id == user.id)) or 0
     return {
         "id": user.id,
         "username": user.username,
@@ -32,7 +34,7 @@ def me_out(session: Session, user: User, request: Request) -> dict:
         "email": user.email,  # chỉ trả cho chính chủ
         "profile_public": user.profile_public,
         "created_at": user.created_at.isoformat(),
-        "stats": {"memes": memes, "votes": votes},
+        "stats": {"memes": memes, "posts": posts, "likes": likes},
         "quota": get_quota(session, user, client_hash(request)).as_dict(),
     }
 
@@ -55,7 +57,8 @@ def _page(session: Session, user: User, before: str | None, owner: User | None) 
         except ValueError as e:
             raise ApiError(400, "invalid_input", "Tham số before không hợp lệ") from e
     rows = session.execute(query.order_by(Meme.created_at.desc()).limit(PAGE_SIZE + 1)).all()
-    items = [meme_out(m, owner) | {"topic": topic} for m, topic in rows[:PAGE_SIZE]]
+    posted = post_ids(session, [m.id for m, _ in rows[:PAGE_SIZE]])
+    items = [meme_out(m, owner, post_id=posted.get(m.id)) | {"topic": topic} for m, topic in rows[:PAGE_SIZE]]
     return {"items": items, "next_before": items[-1]["created_at"] if len(rows) > PAGE_SIZE else None}
 
 
@@ -121,12 +124,20 @@ def update_me(
 
 @router.delete("/me", status_code=204)
 def delete_me(user: User = Depends(require_user), session: Session = Depends(get_session)):
-    """Xoá tài khoản: xoá meme và ảnh, gỡ liên kết job và phiếu bầu (giữ phiếu ẩn danh cho thống kê)."""
+    """Xoá tài khoản: xoá meme, ảnh, bài đăng, tim và bình luận; job cũ được gỡ liên kết."""
     for m in session.scalars(select(Meme).where(Meme.user_id == user.id, Meme.deleted.is_(False))):
         m.deleted = True
         delete_meme_files(m)
     session.execute(update(Job).where(Job.user_id == user.id).values(user_id=None))
-    session.execute(update(Vote).where(Vote.user_id == user.id).values(user_id=None))
+    # Bài của người này biến mất cùng tim và bình luận; tim/bình luận của họ ở bài người khác cũng xoá và đếm lại
+    remove_posts(session, list(session.scalars(select(Post.id).where(Post.user_id == user.id))))
+    touched = set(session.scalars(select(PostLike.post_id).where(PostLike.user_id == user.id)))
+    touched |= set(session.scalars(select(Comment.post_id).where(Comment.user_id == user.id)))
+    session.execute(delete(PostLike).where(PostLike.user_id == user.id))
+    session.execute(delete(Comment).where(Comment.user_id == user.id))
+    for post in session.scalars(select(Post).where(Post.id.in_(touched))):
+        post.like_count = session.scalar(select(func.count()).select_from(PostLike).where(PostLike.post_id == post.id))
+        post.comment_count = session.scalar(select(func.count()).select_from(Comment).where(Comment.post_id == post.id))
     session.execute(update(Meme).where(Meme.user_id == user.id).values(user_id=None))
     for row in session.scalars(select(AuthSession).where(AuthSession.user_id == user.id)):
         session.delete(row)
@@ -136,8 +147,27 @@ def delete_me(user: User = Depends(require_user), session: Session = Depends(get
 
 
 @router.get("/me/memes")
-def my_memes(before: str | None = None, user: User = Depends(require_user), session: Session = Depends(get_session)):
-    return _page(session, user, before, owner=user)
+def my_memes(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=48),
+    user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+):
+    """Phân trang theo số trang (cho trang Meme của tôi)."""
+    total = session.scalar(select(func.count()).select_from(Meme).where(*_owned_final(user.id))) or 0
+    pages = max(1, -(-total // page_size))
+    page = min(page, pages)
+    rows = session.execute(
+        select(Meme, Job.topic)
+        .join(Job, Job.id == Meme.job_id)
+        .where(*_owned_final(user.id))
+        .order_by(Meme.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    posted = post_ids(session, [m.id for m, _ in rows])
+    items = [meme_out(m, user, post_id=posted.get(m.id)) | {"topic": topic} for m, topic in rows]
+    return {"items": items, "page": page, "pages": pages, "total": total, "page_size": page_size}
 
 
 # ---------- hồ sơ công khai ----------

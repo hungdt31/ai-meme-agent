@@ -288,7 +288,7 @@ class Nodes:
             decision, update["round"] = "rewrite", rnd + 1
         else:
             decision = "done"
-            update["refusal"] = "Agent chưa chế được meme đạt chuẩn cho chủ đề này. Thử diễn đạt khác nhé."
+            update["refusal"] = "Agent chưa tạo được meme đạt chuẩn cho chủ đề này. Thử diễn đạt khác nhé."
             update["suggestions"] = prompts.SUGGESTIONS
         update["decision"] = decision
         summary = f"Giữ {len(kept)}/{len(candidates)} ảnh" + (", viết lại vòng mới" if decision == "rewrite" else "")

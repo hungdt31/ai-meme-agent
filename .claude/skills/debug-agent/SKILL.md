@@ -1,6 +1,6 @@
 ---
 name: debug-agent
-description: Chạy thử một job chế meme của ChếMeme bên ngoài server để gỡ lỗi agent LangGraph — đo thời gian từng lần gọi Gemini, xem caption, điểm tự chấm, lý do bị loại và ảnh top 3. Dùng khi meme ra nhạt, sai template, bị tràn chữ, job chạy chậm hoặc timeout, Gemini báo lỗi, hay sau khi sửa prompt/node trong backend/agent.
+description: Chạy thử một job tạo meme của Easy Meme bên ngoài server để gỡ lỗi agent LangGraph — đo thời gian từng lần gọi Gemini, xem caption, điểm tự chấm, lý do bị loại và ảnh top 3. Dùng khi meme ra nhạt, sai template, bị tràn chữ, job chạy chậm hoặc timeout, Gemini báo lỗi, hay sau khi sửa prompt/node trong backend/agent.
 argument-hint: "<chủ đề> [--fake] [--effort low] [--model ...]"
 ---
 

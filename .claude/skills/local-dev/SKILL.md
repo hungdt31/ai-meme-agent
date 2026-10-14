@@ -1,10 +1,10 @@
 ---
 name: local-dev
-description: Bật backend FastAPI và frontend Next.js của ChếMeme trên máy để thử tính năng hoặc kiểm tra thay đổi chạy thật (chế meme qua SSE, trang chia sẻ có og:image, đăng nhập, đấu trường), dùng database và ảnh tạm rồi tắt sạch bằng PID. Dùng khi cần chạy thử app, kiểm tra end-to-end, hay xác nhận một sửa đổi hoạt động ngoài unit test.
+description: Bật backend FastAPI và frontend Next.js của Easy Meme trên máy để thử tính năng hoặc kiểm tra thay đổi chạy thật (tạo meme qua SSE, trang chia sẻ có og:image, đăng nhập, cộng đồng), dùng database và ảnh tạm rồi tắt sạch bằng PID. Dùng khi cần chạy thử app, kiểm tra end-to-end, hay xác nhận một sửa đổi hoạt động ngoài unit test.
 argument-hint: "[--real] [--prod]"
 ---
 
-# Chạy thử ChếMeme trên máy
+# Chạy thử Easy Meme trên máy
 
 Hai script bật/tắt server với **database và ảnh tạm**, không bao giờ dùng `backend/chememe.db` hay `backend/storage/` của người dùng.
 
@@ -17,23 +17,25 @@ Hai script bật/tắt server với **database và ảnh tạm**, không bao gi�
 
 `$SCRATCH` là một thư mục nháp (scratchpad của phiên nếu có). Chạy từ thư mục gốc `chememe/`.
 
-- Nếu cổng 8000 hoặc 3000 đang bận, script dừng lại: rất có thể người dùng đang chạy server của họ. Hỏi người dùng thay vì tắt tiến trình đó.
+- Mặc định dùng cổng **8100 (backend) / 3100 (frontend)**, không phải 8000/3000: người dùng thường đang chạy server thật của họ ở đó, với database thật. Đổi cổng bằng `--backend-port` / `--frontend-port`.
+- **Chỉ chạy các lệnh kiểm tra khi `dev_up.sh` thoát thành công** (nối bằng `&&` hoặc kiểm tra exit code). Nếu cổng bận script sẽ dừng; lúc đó mọi `curl` tiếp theo sẽ rơi vào server khác — đã từng xảy ra và ghi nhầm một phiếu bầu vào database thật.
+- Nếu cổng bận, hỏi người dùng thay vì tắt tiến trình đó.
 - Luôn tắt bằng `dev_down.sh` (tắt theo PID và tiến trình con). **Không** dùng `pkill -f` trong cùng lệnh có chứa chuỗi khớp, vì nó tắt luôn shell đang chạy.
 - `--real` gọi Gemini bằng key của người dùng: chỉ dùng khi họ đồng ý.
 
 ## Kiểm tra nhanh sau khi bật
 
 ```bash
-curl -s localhost:8000/api/health
-JOB=$(curl -s -X POST localhost:8000/api/jobs -H 'Content-Type: application/json' \
+curl -s localhost:8100/api/health
+JOB=$(curl -s -X POST localhost:8100/api/jobs -H 'Content-Type: application/json' \
   -d '{"topic":"Sáng thứ 2 đầu tuần"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["job_id"])')
-curl -sN -X POST localhost:8000/api/jobs/$JOB/run > "$SCRATCH/sse.txt"
+curl -sN -X POST localhost:8100/api/jobs/$JOB/run > "$SCRATCH/sse.txt"
 grep -o '"type": "[a-z_]*"' "$SCRATCH/sse.txt" | sort | uniq -c    # cần có node_end, candidate, scored, result, done
 MEME=$(grep '"type": "result"' "$SCRATCH/sse.txt" | sed 's/^data: //' | python3 -c 'import sys,json;print(json.load(sys.stdin)["memes"][0]["id"])')
-curl -s localhost:3000/m/$MEME | grep -o '<meta property="og:image" content="[^"]*"'   # phải trỏ tới file .jpg
+curl -s localhost:3100/m/$MEME | grep -o '<meta property="og:image" content="[^"]*"'   # phải trỏ tới file .jpg
 ```
 
-Trang khác: `/`, `/job/<id>`, `/arena`, `/about`, `/login`, `/me`, `/u/<username>` — kiểm tra mã trả về bằng `curl -s -o /dev/null -w '%{http_code}'`.
+Trang khác: `/`, `/job/<id>`, `/feed`, `/p/<id>`, `/about`, `/login`, `/me`, `/u/<username>` — kiểm tra mã trả về bằng `curl -s -o /dev/null -w '%{http_code}'`.
 
 ## Thử tính năng cần đăng nhập
 
@@ -53,4 +55,4 @@ with get_sessionmaker()() as s:
 
 Gửi token qua header `Authorization: Bearer <token>`.
 
-Đấu trường cần cặp sinh sẵn: xem skill `arena-evals` (với FakeLLM chạy nhanh, không tốn quota).
+Thử cộng đồng: tạo meme bằng token trên, rồi `POST /api/posts {"meme_id": ..., "caption": ...}`, `POST /api/posts/<id>/like`, `POST /api/posts/<id>/comments {"body": ...}`, xem `GET /api/feed`.

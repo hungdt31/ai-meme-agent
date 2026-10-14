@@ -1,4 +1,5 @@
 import logging
+import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,14 +10,19 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
-from app.api import limiter, router
+from app.api import router
 from app.config import get_settings
 from app.db import init_db
 from app.errors import ApiError
+from app.limits import limiter
+from app.social import router as social_router
 from app.users_api import router as users_router
 from render.templates import IMAGE_DIR
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# Log mặc định của thư viện Google, không cần thiết
+logging.getLogger("google_genai.models").setLevel(logging.WARNING)
+warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*")
 
 
 @asynccontextmanager
@@ -27,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     s = get_settings()
-    app = FastAPI(title="ChếMeme API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Easy Meme API", version="0.1.0", lifespan=lifespan)
     app.state.limiter = limiter
 
     @app.exception_handler(ApiError)
@@ -56,6 +62,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(users_router)
+    app.include_router(social_router)
     if s.storage_backend == "local":
         Path(s.local_storage_dir).mkdir(parents=True, exist_ok=True)
         app.mount("/files", StaticFiles(directory=s.local_storage_dir), name="files")

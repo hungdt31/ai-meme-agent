@@ -145,7 +145,7 @@ def render_meme(base: Image.Image, boxes: list[Box], captions: dict[str, str], w
         size = max(11, int(h * 0.022))
         draw.text(
             (w - size * 0.6, h - size * 0.5),
-            "chememe",
+            "easymeme",
             font=_font("label", size),
             fill="#FFFFFF",
             anchor="rd",

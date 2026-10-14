@@ -1,6 +1,6 @@
-# ChếMeme
+# Easy Meme
 
-Web app chế meme tiếng Việt bằng AI agent. Kể một tình huống (hoặc tải ảnh lên), agent chọn template, viết caption, dùng code vẽ chữ lên ảnh, rồi tự chấm bằng Gemini để lọc ra 3 meme đọc được và đủ hài. Mỗi meme có link riêng hiện ảnh xem trước khi dán vào Messenger, Zalo.
+Web app tạo meme tiếng Việt bằng AI agent. Kể tạomột tình huống (hoặc tải ảnh lên), agent chọn template, viết caption, dùng code vẽ chữ lên ảnh, rồi tự chấm bằng Gemini để lọc ra 3 meme đọc được và đủ hài. Mỗi meme có link riêng hiện ảnh xem trước khi dán vào Messenger, Zalo.
 
 - **Agent:** LangGraph, 8 node, vòng tự chấm và viết lại tối đa 2 vòng
 - **LLM:** Gemini (viết, xem ảnh, embedding) qua `langchain-google-genai`
@@ -21,15 +21,15 @@ upload/chủ đề → understand ─┬─ không an toàn → refuse
 ```
 chememe/
 ├── backend/
-│   ├── agent/      graph.py, nodes.py, state.py, prompts.py, llm.py (Gemini + FakeLLM), baseline.py
+│   ├── agent/      graph.py, nodes.py, state.py, prompts.py, llm.py (Gemini + FakeLLM)
 │   ├── rag/        search.py: hybrid search chọn template
 │   ├── render/     renderer.py (đặt chữ, đo tràn), templates.py, fonts/ (Anton, Be Vietnam Pro, giấy phép OFL)
 │   ├── app/        main.py, api.py, service.py, db.py, storage.py (local / Cloudflare R2), security.py
 │   ├── data/templates/   JSON + ảnh template
-│   ├── scripts/    make_templates.py, index_templates.py, seed_arena.py
+│   ├── scripts/    make_templates.py, index_templates.py
 │   ├── evals/      run_eval.py + bộ dữ liệu
 │   └── tests/
-├── frontend/       app/ (/, /job/[id], /m/[id], /arena, /about), components/, lib/api.ts
+├── frontend/       app/ (/, /job/[id], /m/[id], /feed, /p/[id], /me, /u/[username], /about), components/, lib/api.ts
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```
@@ -62,7 +62,7 @@ Muốn chạy với Postgres giống môi trường thật: `docker compose up` 
 
 ## Đăng nhập Google
 
-Khách chưa đăng nhập vẫn chế được meme (5 lượt mỗi 24 giờ, đếm theo IP). Đăng nhập được 20 lượt, trang **Meme của tôi**, hồ sơ công khai `/u/<username>`, và đấu trường không lặp cặp đã bầu.
+Khách chưa đăng nhập vẫn tạo được meme (5 lượt mỗi 24 giờ, đếm theo IP). Đăng nhập được 20 lượt, trang **Meme của tôi**, hồ sơ công khai `/u/<username>`, và chia sẻ meme lên cộng đồng.
 
 1. Vào Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID**, loại **Web application**. Lần đầu sẽ phải cấu hình OAuth consent screen (chọn External, điền tên app và email).
 2. Ở **Authorized JavaScript origins**, thêm `http://localhost`, `http://localhost:3000` và domain Vercel khi deploy. Không cần redirect URI.
@@ -70,7 +70,7 @@ Khách chưa đăng nhập vẫn chế được meme (5 lượt mỗi 24 giờ, 
 
 Cách hoạt động: frontend lấy ID token bằng Google Identity Services, backend xác thực token với Google rồi cấp token phiên riêng (lưu dạng hash trong bảng `sessions`, hạn 30 ngày). Token gửi qua header `Authorization: Bearer`, không dùng cookie vì frontend và backend khác domain.
 
-**Bảng dữ liệu:** `users` (google_sub, email riêng tư, tên hiển thị, username, profile_public), `sessions`, cùng cột `user_id` trong `jobs`, `memes`, `votes`. Bảng `votes` có ràng buộc mỗi người một phiếu cho mỗi cặp.
+**Bảng dữ liệu:** `users` (google_sub, email riêng tư, tên hiển thị, username, profile_public), `sessions`, cùng cột `user_id` trong `jobs`, `memes`.
 
 **Database tạo từ phiên bản trước** (chưa có bảng người dùng): backend báo lỗi `Database thiếu cột …` khi khởi động, vì `create_all` không thêm cột vào bảng đã có. Xoá các bảng `jobs`, `memes`, `votes` cũ (hoặc tạo database hay branch mới trên Neon), backend sẽ tự tạo lại đủ bảng.
 
@@ -91,16 +91,19 @@ Test luôn chạy FakeLLM nên không tốn quota. CI chạy đúng các lệnh 
 
 6 template khởi đầu do `scripts/make_templates.py` tự vẽ, nên không dính bản quyền. Nếu dùng template meme phổ biến, hãy ghi nguồn vào trường `source` và giữ app phi lợi nhuận.
 
-## Đấu trường và eval
+## Cộng đồng
+
+Người dùng đã đăng nhập chia sẻ meme của mình lên bảng tin `/feed` kèm caption tuỳ chọn. Mọi người thả tim và bình luận ở trang bài viết `/p/[id]` (link này có ảnh xem trước khi dán vào chat). Bảng tin có hai tab: Mới nhất và Nổi bật (tương tác chia theo tuổi bài, trong 7 ngày). Người đăng sửa caption hoặc xoá bài; chủ bài xoá được mọi bình luận trong bài; bài bị báo cáo 3 lần tự ẩn.
+
+Dữ liệu: bảng `posts`, `post_likes`, `comments` (tự tạo khi backend khởi động).
+
+## Eval
 
 ```bash
-python -m scripts.seed_arena --limit 20      # sinh cặp meme agent vs baseline cho /arena (tốn quota)
 python -m evals.run_eval templates           # recall@3: keyword vs vector vs hybrid
 python -m evals.run_eval safety              # tỷ lệ chặn 20 prompt tấn công, tỷ lệ chặn nhầm 20 chủ đề vô hại
 python -m evals.run_eval quality --limit 10  # tỷ lệ tràn chữ, số lần gọi Gemini, độ trễ
 ```
-
-Kết quả bình chọn xem ở `/about` hoặc `GET /api/arena/stats`. Cần khoảng 300 phiếu trở lên thì tỷ lệ thắng mới đáng tin.
 
 ## Deploy
 
@@ -110,7 +113,7 @@ Kết quả bình chọn xem ở `/about` hoặc `GET /api/arena/stats`. Cần k
 cd backend
 gcloud run deploy chememe-api --source . --region asia-southeast1 --allow-unauthenticated \
   --memory 1Gi --timeout 300 --min-instances 0 --max-instances 3 \
-  --set-secrets GOOGLE_API_KEY=gemini-key:latest,DATABASE_URL=database-url:latest,R2_SECRET_ACCESS_KEY=r2-secret:latest,ARENA_HMAC_SECRET=arena-secret:latest,IP_HASH_SALT=ip-salt:latest \
+  --set-secrets GOOGLE_API_KEY=gemini-key:latest,DATABASE_URL=database-url:latest,R2_SECRET_ACCESS_KEY=r2-secret:latest,IP_HASH_SALT=ip-salt:latest \
   --set-env-vars STORAGE_BACKEND=r2,R2_ACCOUNT_ID=...,R2_ACCESS_KEY_ID=...,R2_BUCKET=chememe,R2_PUBLIC_BASE_URL=https://pub-xxxx.r2.dev,ALLOWED_ORIGINS=https://<frontend>.vercel.app,PUBLIC_BASE_URL=https://<url-cloud-run>
 ```
 
@@ -131,7 +134,7 @@ gcloud run deploy chememe-api --source . --region asia-southeast1 --allow-unauth
 | ESLint | Chỉ `tsc` + `next build` | Next 16 bỏ `next lint`; thêm ESLint sau nếu cần. |
 
 **Giới hạn đã biết:**
-- Lượt chế đếm trong database nên đúng với mọi instance. Các giới hạn phụ (upload, sửa chữ, bầu chọn) vẫn dùng `slowapi` lưu trong bộ nhớ từng instance.
+- Lượt tạo đếm trong database nên đúng với mọi instance. Các giới hạn phụ (upload, sửa chữ, bầu chọn) vẫn dùng `slowapi` lưu trong bộ nhớ từng instance.
 - Token phiên lưu trong `localStorage` của trình duyệt: tiện nhưng nếu trang dính lỗi XSS thì token có thể bị đọc.
 - Không có migration tự động: thêm cột mới vào bảng đã có thì phải tự `ALTER TABLE` hoặc tạo lại bảng.
 - Ảnh tải lên chỉ được bảo vệ bằng key ngẫu nhiên khó đoán, không phải bucket riêng tư.

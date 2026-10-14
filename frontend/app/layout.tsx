@@ -16,7 +16,7 @@ const serif = Source_Serif_4({ subsets: ["latin", "vietnamese"], variable: "--fo
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "ChếMeme · chế meme bằng AI", template: "%s · ChếMeme" },
+  title: { default: "Easy Meme · tạo meme bằng AI", template: "%s · Easy Meme" },
   description: "Kể tình huống, nhận 3 meme tiếng Việt đã được AI tự chấm và lọc.",
 };
 
@@ -31,13 +31,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="flex items-center justify-between py-4">
             <Link href="/" className="flex min-h-11 items-center gap-2">
               <Logo />
-              <span className="font-serif text-xl font-semibold tracking-tight">ChếMeme</span>
+              <span className="font-serif text-xl font-semibold tracking-tight">Easy Meme</span>
             </Link>
             <UserMenu />
           </header>
           <main className="flex-1 pb-10">{children}</main>
           <footer className="border-t border-line py-5 text-center text-xs leading-relaxed text-faint">
-            Giải trí phi lợi nhuận · Không chế ảnh người khác khi chưa được đồng ý ·{" "}
+            Giải trí phi lợi nhuận · Không tạo meme từ ảnh người khác khi chưa được đồng ý ·{" "}
+            <Link href="/feed" className="underline">
+              Cộng đồng
+            </Link>{" "}
+            ·{" "}
             <Link href="/about" className="underline">
               Cách hoạt động
             </Link>

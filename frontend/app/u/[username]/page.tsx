@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { MemeGrid } from "@/components/MemeGrid";
+import { UserPosts } from "@/components/UserPosts";
 import { api, ApiError, type Profile } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const cover = profile.memes.items[0]?.og_image_url;
   return {
     title: `${profile.display_name} (@${profile.username})`,
-    description: `${profile.meme_count} meme trên ChếMeme`,
+    description: `${profile.meme_count} meme trên Easy Meme`,
     openGraph: { title: `Meme của ${profile.display_name}`, images: cover ? [{ url: cover }] : [] },
   };
 }
@@ -41,7 +42,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </p>
         </div>
       </section>
-      <MemeGrid items={profile.memes.items} />
+      <UserPosts username={profile.username} />
+      <section className="flex flex-col gap-3">
+        <h2 className="font-serif text-xl">Meme đã tạo</h2>
+        <MemeGrid items={profile.memes.items} />
+      </section>
     </div>
   );
 }

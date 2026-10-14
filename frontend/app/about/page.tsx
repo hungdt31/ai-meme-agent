@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { api } from "@/lib/api";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Cách hoạt động" };
-export const dynamic = "force-dynamic";
 
 const STEPS = [
   ["Hiểu ý", "Gemini tóm tắt tình huống, chọn giọng điệu và kiểm tra an toàn."],
@@ -13,11 +12,10 @@ const STEPS = [
   ["Lọc và viết lại", "Code giữ ảnh đạt chuẩn; thiếu thì viết lại theo nhận xét, tối đa 2 vòng."],
 ];
 
-export default async function About() {
-  const stats = await api.stats().catch(() => null);
+export default function About() {
   return (
     <div className="flex flex-col gap-6 pt-2">
-      <h1 className="font-serif text-3xl font-normal">Cách ChếMeme hoạt động</h1>
+      <h1 className="font-serif text-3xl font-normal">Cách Easy Meme hoạt động</h1>
       <ol className="flex flex-col gap-3">
         {STEPS.map(([title, body], i) => (
           <li key={title} className="flex gap-3 rounded-2xl border border-line bg-white p-4">
@@ -33,19 +31,13 @@ export default async function About() {
       </ol>
 
       <section className="flex flex-col gap-2 rounded-2xl border border-line bg-white p-5">
-        <h2 className="font-serif text-xl">Kết quả đấu trường</h2>
+        <h2 className="font-serif text-xl">Chia sẻ với cộng đồng</h2>
         <p className="text-sm leading-relaxed text-muted">
-          Mỗi chủ đề có một meme của agent và một meme do Gemini làm trong một lần gọi (không tự chấm). Người bầu không biết bên nào là agent.
+          Đăng nhập rồi tạo meme, bấm “Chia sẻ lên cộng đồng” và viết thêm vài dòng nếu muốn. Mọi người có thể thả tim và bình luận.
         </p>
-        {stats && stats.votes > 0 && stats.agent_win_rate !== null && stats.ci95 ? (
-          <p className="text-[15px]">
-            Agent thắng <strong>{Math.round(stats.agent_win_rate * 100)}%</strong> trên {stats.votes} phiếu (khoảng tin cậy 95%:{" "}
-            {Math.round(stats.ci95[0] * 100)}–{Math.round(stats.ci95[1] * 100)}%).
-            {stats.votes < 300 && " Chưa đủ 300 phiếu nên con số còn dao động nhiều."}
-          </p>
-        ) : (
-          <p className="text-[15px]">Chưa có phiếu nào.</p>
-        )}
+        <Link href="/feed" className="text-[15px] font-semibold text-clay-dark underline">
+          Xem bảng tin cộng đồng
+        </Link>
       </section>
     </div>
   );

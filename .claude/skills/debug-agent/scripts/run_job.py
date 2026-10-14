@@ -1,4 +1,4 @@
-"""Chạy một job ChếMeme ngoài server, đo thời gian từng lần gọi LLM và xuất ảnh để xem.
+"""Chạy một job Easy Meme ngoài server, đo thời gian từng lần gọi LLM và xuất ảnh để xem.
 
 Chạy từ thư mục backend/ (để Settings đọc được backend/.env):
     .venv/bin/python ../.claude/skills/debug-agent/scripts/run_job.py "Sáng thứ 2 đầu tuần" [--effort low] [--model ...] [--fake]

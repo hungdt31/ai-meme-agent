@@ -7,7 +7,10 @@ export function MemeGrid({ items, onDelete }: { items: Meme[]; onDelete?: (id: s
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {items.map((m) => (
         <li key={m.id} className="flex flex-col gap-1.5">
-          <Link href={`/m/${m.id}`} className="block overflow-hidden rounded-2xl border border-line bg-white">
+          <Link href={`/m/${m.id}`} className="relative block overflow-hidden rounded-2xl border border-line bg-white">
+            {m.post_id && (
+              <span className="absolute top-2 left-2 rounded-full bg-good-tint px-2 py-0.5 text-[11px] font-semibold text-good">Đã đăng</span>
+            )}
             <img src={m.image_url} alt={Object.values(m.captions).join(" / ")} loading="lazy" className="aspect-square w-full object-cover" />
           </Link>
           <div className="flex items-start justify-between gap-2 px-1">

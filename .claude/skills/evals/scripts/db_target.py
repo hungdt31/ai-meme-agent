@@ -1,6 +1,6 @@
 """In ra database mà backend sẽ dùng (theo backend/.env hoặc DATABASE_URL), che mật khẩu, kèm số dòng. Chỉ đọc.
 
-Chạy từ backend/: .venv/bin/python ../.claude/skills/arena-evals/scripts/db_target.py
+Chạy từ backend/: .venv/bin/python ../.claude/skills/evals/scripts/db_target.py
 """
 
 import sys
@@ -23,9 +23,6 @@ from app.db import get_engine  # noqa: E402
 engine = get_engine()
 tables = set(inspect(engine).get_table_names())
 with engine.connect() as conn:
-    for table in ("jobs", "memes", "votes", "users"):
+    for table in ("jobs", "memes", "users", "posts", "comments"):
         if table in tables:
             print(f"  {table}: {conn.execute(text(f'SELECT COUNT(*) FROM {table}')).scalar()}")
-    if "jobs" in tables:
-        rows = conn.execute(text("SELECT variant, COUNT(*) FROM jobs WHERE arena = :t GROUP BY variant"), {"t": True}).all()
-        print("  arena jobs:", dict(rows) or 0)

@@ -114,45 +114,6 @@ def test_username_validation(client, login):
     assert client.patch("/api/me", json={"username": "Moi_Ten"}, headers=_auth(h)).json()["username"] == "moi_ten"
 
 
-def test_one_vote_per_user_per_pair(client, login):
-    from app.db import Job, Meme, Vote, get_sessionmaker
-
-    with get_sessionmaker()() as s:
-        for variant in ("agent", "baseline"):
-            job = Job(input_type="topic", topic="Cặp riêng cho test vote", status="done", arena=True, variant=variant)
-            s.add(job)
-            s.flush()
-            s.add(
-                Meme(
-                    job_id=job.id,
-                    template_id="pile",
-                    boxes=[],
-                    captions={},
-                    image_key=f"memes/v-{variant}.webp",
-                    variant=variant,
-                    rank=1,
-                )
-            )
-        s.commit()
-
-    h = login(sub="sub-voter", email="voter@example.com")
-    seen = set()
-    while True:  # bầu hết các cặp hiện có
-        r = client.get("/api/arena/pair", headers=_auth(h))
-        if r.status_code == 404:
-            assert r.json()["code"] == "all_voted"
-            break
-        pair = r.json()
-        assert pair["pair_token"] not in seen
-        seen.add(pair["pair_token"])
-        for _ in range(2):  # bấm 2 lần chỉ tính 1 phiếu
-            client.post("/api/arena/vote", json={"pair_token": pair["pair_token"], "winner": "a"}, headers=_auth(h))
-    with get_sessionmaker()() as s:
-        votes = s.query(Vote).filter(Vote.user_id == h["user"]["id"]).count()
-    assert votes == len(seen) >= 1
-    assert client.get("/api/me", headers=_auth(h)).json()["stats"]["votes"] == votes
-
-
 def test_delete_account_removes_memes_and_sessions(client, login):
     h = login(sub="sub-del", email="del@example.com")
     meme = _make(client, _auth(h))[0]
@@ -176,3 +137,38 @@ def test_outdated_database_is_reported_clearly(tmp_path):
     with pytest.raises(SchemaOutdated, match="jobs.user_id"):
         init_db(engine)
     assert "users" in inspect(engine).get_table_names()  # bảng còn thiếu vẫn được tạo
+
+
+def test_failed_jobs_do_not_use_quota(client, login):
+    from app.db import Job, get_sessionmaker
+
+    h = login(sub="q-failed", email="q-failed@example.com")
+    uid = h["user"]["id"]
+    with get_sessionmaker()() as s:
+        s.add_all(
+            [
+                Job(input_type="topic", topic="a", status="failed", error="llm_error", user_id=uid),
+                Job(input_type="topic", topic="b", status="failed", error="timeout", user_id=uid),
+                Job(input_type="topic", topic="c", status="failed", error="client_disconnected", user_id=uid),
+                Job(input_type="topic", topic="d", status="done", user_id=uid),
+                Job(input_type="topic", topic="e", status="refused", user_id=uid),
+            ]
+        )
+        s.commit()
+    assert client.get("/api/me/quota", headers={"Authorization": h["Authorization"]}).json()["used"] == 3
+
+
+def test_my_memes_page_numbers(client, login):
+    h = login(sub="pg-user", email="pg-user@example.com")
+    auth = {"Authorization": h["Authorization"]}
+    for topic in ("một", "hai"):
+        job_id = client.post("/api/jobs", json={"topic": topic}, headers=auth).json()["job_id"]
+        client.post(f"/api/jobs/{job_id}/run")
+    first = client.get("/api/me/memes?page=1&page_size=4", headers=auth).json()
+    assert (first["total"], first["pages"], first["page"], len(first["items"])) == (6, 2, 1, 4)
+    second = client.get("/api/me/memes?page=2&page_size=4", headers=auth).json()
+    assert len(second["items"]) == 2
+    assert not {m["id"] for m in first["items"]} & {m["id"] for m in second["items"]}
+    assert (
+        client.get("/api/me/memes?page=99&page_size=4", headers=auth).json()["page"] == 2
+    )  # quá số trang: về trang cuối

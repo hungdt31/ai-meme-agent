@@ -1,6 +1,6 @@
 ---
 name: add-template
-description: Thêm hoặc sửa template meme cho ChếMeme — đặt ảnh, viết JSON khung chữ (toạ độ 0–1, style, max_lines, max_chars, hint, when_to_use, ví dụ), kiểm tra khung và tràn chữ bằng ảnh xem trước, cập nhật embedding và chạy test. Dùng khi người dùng muốn thêm template mới, chỉnh khung chữ, hoặc meme của một template hay bị tràn chữ hay chọn sai.
+description: Thêm hoặc sửa template meme cho Easy Meme — đặt ảnh, viết JSON khung chữ (toạ độ 0–1, style, max_lines, max_chars, hint, when_to_use, ví dụ), kiểm tra khung và tràn chữ bằng ảnh xem trước, cập nhật embedding và chạy test. Dùng khi người dùng muốn thêm template mới, chỉnh khung chữ, hoặc meme của một template hay bị tràn chữ hay chọn sai.
 argument-hint: "<template-id> [đường dẫn ảnh]"
 ---
 

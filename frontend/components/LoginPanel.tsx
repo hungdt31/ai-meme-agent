@@ -6,10 +6,10 @@ import { useAuth } from "@/components/AuthProvider";
 import { GoogleSignIn } from "@/components/GoogleSignIn";
 
 const PERKS = [
-  "20 lượt chế mỗi ngày thay vì 5",
-  "Lưu lại mọi meme đã chế, xoá được meme của mình",
+  "20 lượt tạo mỗi ngày thay vì 5",
+  "Lưu lại mọi meme đã tạo, xoá được meme của mình",
   "Trang hồ sơ riêng để khoe meme với bạn bè",
-  "Đấu trường nhớ các cặp bạn đã bầu",
+  "Chia sẻ meme lên cộng đồng, thả tim và bình luận",
 ];
 
 export function LoginPanel({ next }: { next: string }) {
@@ -22,7 +22,7 @@ export function LoginPanel({ next }: { next: string }) {
 
   return (
     <div className="flex flex-col gap-6 pt-6">
-      <h1 className="font-serif text-3xl font-normal">Đăng nhập ChếMeme</h1>
+      <h1 className="font-serif text-3xl font-normal">Đăng nhập Easy Meme</h1>
       <ul className="flex flex-col gap-2 rounded-2xl border border-line bg-white p-5 text-[15px]">
         {PERKS.map((p) => (
           <li key={p} className="flex items-start gap-2">

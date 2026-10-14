@@ -2,24 +2,30 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Avatar } from "@/components/Avatar";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { MemeGrid } from "@/components/MemeGrid";
+import { Pagination } from "@/components/Pagination";
 import { api, ApiError, type Meme } from "@/lib/api";
 
 export function MyAccount() {
   const router = useRouter();
   const { user, loading, logout, setUser, refresh } = useAuth();
   const [memes, setMemes] = useState<Meme[]>([]);
-  const [nextBefore, setNextBefore] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loadingMemes, setLoadingMemes] = useState(true);
+  const memesRef = useRef<HTMLElement>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login?next=/me");
@@ -33,16 +39,22 @@ export function MyAccount() {
   }, [user]);
 
   const userId = user?.id;
+  const loadPage = useCallback(async (n: number) => {
+    setLoadingMemes(true);
+    try {
+      const res = await api.myMemes(n);
+      setMemes(res.items);
+      setPage(res.page);
+      setPages(res.pages);
+      setTotal(res.total);
+    } finally {
+      setLoadingMemes(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!userId) return;
-    api
-      .myMemes()
-      .then((page) => {
-        setMemes(page.items);
-        setNextBefore(page.next_before);
-      })
-      .finally(() => setLoadingMemes(false));
-  }, [userId]);
+    if (userId) loadPage(1);
+  }, [userId, loadPage]);
 
   if (!user) return <p className="pt-6 text-muted">Đang tải…</p>;
 
@@ -60,22 +72,19 @@ export function MyAccount() {
     }
   }
 
-  async function loadMore() {
-    if (!nextBefore) return;
-    const page = await api.myMemes(nextBefore);
-    setMemes((m) => [...m, ...page.items]);
-    setNextBefore(page.next_before);
+  function goTo(n: number) {
+    loadPage(n);
+    memesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function removeMeme(id: string) {
     if (!confirm("Xoá meme này? Link chia sẻ cũng sẽ không mở được nữa.")) return;
     await api.deleteMeme(id);
-    setMemes((m) => m.filter((x) => x.id !== id));
+    await loadPage(memes.length === 1 && page > 1 ? page - 1 : page); // tải lại để trang không bị hụt
     refresh();
   }
 
   async function removeAccount() {
-    if (!confirm("Xoá tài khoản sẽ xoá toàn bộ meme của bạn và không khôi phục được. Tiếp tục?")) return;
     await api.deleteMe();
     await logout();
     router.replace("/");
@@ -96,20 +105,11 @@ export function MyAccount() {
         </div>
       </section>
 
-      <section className="grid grid-cols-3 gap-2 text-center">
+      <section className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
         <Stat value={`${user.quota.left}/${user.quota.limit}`} label="lượt còn lại" />
         <Stat value={String(user.stats.memes)} label="meme" />
-        <Stat value={String(user.stats.votes)} label="phiếu bầu" />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="font-serif text-xl">Meme của tôi</h2>
-        {loadingMemes ? <p className="text-sm text-muted">Đang tải…</p> : <MemeGrid items={memes} onDelete={removeMeme} />}
-        {nextBefore && (
-          <button type="button" onClick={loadMore} className="min-h-11 rounded-2xl border border-line-strong bg-white text-sm">
-            Xem thêm
-          </button>
-        )}
+        <Stat value={String(user.stats.posts)} label="bài đăng" />
+        <Stat value={String(user.stats.likes)} label="lượt tim" />
       </section>
 
       <form onSubmit={save} className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5">
@@ -138,6 +138,21 @@ export function MyAccount() {
         </button>
       </form>
 
+      <section ref={memesRef} className="flex scroll-mt-4 flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-serif text-xl">Meme của tôi</h2>
+          {total > 0 && (
+            <span className="text-sm text-muted">
+              {total} meme · trang {page}/{pages}
+            </span>
+          )}
+        </div>
+        <div className={loadingMemes && memes.length ? "opacity-50 transition-opacity" : ""}>
+          {loadingMemes && !memes.length ? <p className="text-sm text-muted">Đang tải…</p> : <MemeGrid items={memes} onDelete={removeMeme} />}
+        </div>
+        <Pagination page={page} pages={pages} onChange={goTo} />
+      </section>
+
       <section className="flex flex-col gap-2">
         <button
           type="button"
@@ -149,9 +164,10 @@ export function MyAccount() {
         >
           Đăng xuất
         </button>
-        <button type="button" onClick={removeAccount} className="min-h-11 text-sm text-clay-dark underline">
+        <button type="button" onClick={() => setConfirmDelete(true)} className="min-h-11 text-sm text-clay-dark underline">
           Xoá tài khoản
         </button>
+        <DeleteAccountDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={removeAccount} />
       </section>
     </div>
   );

@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from functools import lru_cache
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text, create_engine, inspect
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -65,9 +65,9 @@ class Job(Base):
     user_id: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
     llm_calls: Mapped[int] = mapped_column(Integer, default=0)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    # Đấu trường: job sinh sẵn theo bộ chủ đề cố định
+    # Cột cũ của tính năng đấu trường (đã bỏ). Giữ vì database đã tạo có các cột này dạng NOT NULL.
     arena: Mapped[bool] = mapped_column(Boolean, default=False)
-    variant: Mapped[str] = mapped_column(String(16), default="agent")  # agent | baseline
+    variant: Mapped[str] = mapped_column(String(16), default="agent")
 
 
 class Meme(Base):
@@ -77,7 +77,7 @@ class Meme(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     job_id: Mapped[str] = mapped_column(String(16), index=True)
     template_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    base_key: Mapped[str | None] = mapped_column(String(128), nullable=True)  # ảnh gốc khi chế ảnh tải lên
+    base_key: Mapped[str | None] = mapped_column(String(128), nullable=True)  # ảnh gốc khi tạo meme từ ảnh tải lên
     boxes: Mapped[list] = mapped_column(JSON, default=list)
     captions: Mapped[dict] = mapped_column(JSON, default=dict)
     image_key: Mapped[str] = mapped_column(String(128))
@@ -91,24 +91,40 @@ class Meme(Base):
     deleted: Mapped[bool] = mapped_column(Boolean, default=False)  # chủ meme đã xoá
 
 
-class Vote(Base):
-    __tablename__ = "votes"
+class Post(Base):
+    """Bài đăng cộng đồng: một meme của chính người đăng, kèm caption tuỳ chọn."""
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    __tablename__ = "posts"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True, default=new_id)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)
+    user_id: Mapped[str] = mapped_column(String(16), index=True)
+    meme_id: Mapped[str] = mapped_column(String(16), unique=True)  # mỗi meme chỉ đăng một lần
+    caption: Mapped[str] = mapped_column(Text, default="")
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Đếm sẵn để bảng tin không phải đếm lại mỗi lần tải
+    like_count: Mapped[int] = mapped_column(Integer, default=0)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0)
+    reported: Mapped[int] = mapped_column(Integer, default=0)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class PostLike(Base):
+    __tablename__ = "post_likes"
+
+    post_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(16), primary_key=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-    meme_a: Mapped[str] = mapped_column(String(16))
-    meme_b: Mapped[str] = mapped_column(String(16))
-    winner: Mapped[str] = mapped_column(String(8))  # a | b | tie
-    client_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    user_id: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    pair_key: Mapped[str | None] = mapped_column(String(40), nullable=True)  # "<id nhỏ>|<id lớn>"
-
-    # Mỗi người chỉ có một phiếu cho mỗi cặp; phiếu ẩn danh (user_id NULL) không bị ràng buộc
-    __table_args__ = (Index("uq_votes_user_pair", "user_id", "pair_key", unique=True),)
 
 
-def pair_key(a: str, b: str) -> str:
-    return "|".join(sorted((a, b)))
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True, default=new_id)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    post_id: Mapped[str] = mapped_column(String(16), index=True)
+    user_id: Mapped[str] = mapped_column(String(16), index=True)
+    body: Mapped[str] = mapped_column(Text)
 
 
 @lru_cache

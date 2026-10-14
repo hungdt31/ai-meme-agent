@@ -45,7 +45,7 @@ class Template(BaseModel):
         return f"{self.name}. {self.when_to_use}. Từ khoá: {', '.join(self.tags)}. Ví dụ: {examples}"
 
 
-# Khung chữ mặc định khi chế ảnh người dùng tải lên
+# Khung chữ mặc định khi tạo meme từ ảnh người dùng tải lên
 UPLOAD_LAYOUTS: dict[str, list[Box]] = {
     "top_bottom": [
         Box(id="top", x=0.04, y=0.03, w=0.92, h=0.2, style="impact", max_lines=2, max_chars=40),

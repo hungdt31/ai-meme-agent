@@ -10,7 +10,7 @@ export function ShareButtons({ memeId, imageUrl, compact = false }: { memeId: st
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ url, title: "Meme từ ChếMeme" });
+        await navigator.share({ url, title: "Meme từ Easy Meme" });
         return;
       } catch {
         // người dùng đóng bảng chia sẻ: chuyển sang copy link

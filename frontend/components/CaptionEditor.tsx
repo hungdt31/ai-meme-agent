@@ -69,10 +69,10 @@ export function CaptionEditor({ meme, onChange, onDone }: { meme: Meme; onChange
 
       <p className="text-sm text-muted" aria-live="polite">
         {status === "saving" && "Đang vẽ lại…"}
-        {status === "saved" && "Đã cập nhật · không tốn lượt chế"}
+        {status === "saved" && "Đã cập nhật · không tốn lượt tạo"}
         {status === "overflow" && "Chữ dài quá khung, rút gọn một chút nhé"}
         {status === "error" && error}
-        {status === "idle" && "Ảnh vẽ lại ngay khi bạn gõ, không tốn lượt chế"}
+        {status === "idle" && "Ảnh vẽ lại ngay khi bạn gõ, không tốn lượt tạo"}
       </p>
 
       <div className="grid grid-cols-2 gap-2">
